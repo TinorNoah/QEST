@@ -29,20 +29,19 @@ if ! command -v yay &> /dev/null; then
     fi
 fi
 
-# We list all native + modern packages that yay can install. 
-# yay will fallback to pacman for official packages, and AUR for others.
-ARCH_PACKAGES="zoxide zsh-autosuggestions bat fzf nushell starship direnv atuin chezmoi age helix zellij lazygit just python-moulti btop bottom viddy sysz yazi eza fd git-delta rclone broot s5cmd lnav jq yq ripgrep sd jless dasel choose visidata logdy-bin duf procs czkawka-cli dust gdu erdtree lazydocker gping doggo xh curl wget bandwhich termshark atac gitleaks asciinema tealdeer navi grex"
-
 echo "Installing all requested tools via yay..."
 if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY RUN] Would attempt to install: $ARCH_PACKAGES"
+    echo "[DRY RUN] Would attempt to install from manifests/arch_core.txt"
 else
+    # Load manifest into an array
+    mapfile -t ARCH_PACKAGES_ARRAY < "$SCRIPT_DIR/manifests/arch_core.txt"
+    # shellcheck disable=SC2145
+    ARCH_PACKAGES="${ARCH_PACKAGES_ARRAY[@]}"
+
     if command -v yay &> /dev/null; then
-        # shellcheck disable=SC2086
-        yay -S --noconfirm $ARCH_PACKAGES || echo "Some packages failed to install. Continuing..."
+        qest_spin "Installing 40+ modern tools via yay..." yay -S --noconfirm "${ARCH_PACKAGES_ARRAY[@]}" || qest_error "Some packages failed."
     else
-        # Fallback to pacman if yay is not available
-        # shellcheck disable=SC2086
-        execute_sudo pacman -S --noconfirm $ARCH_PACKAGES || echo "Some packages failed to install via pacman. Continuing..."
+        qest_spin "Installing 40+ modern tools via pacman..." execute_sudo pacman -S --noconfirm "${ARCH_PACKAGES_ARRAY[@]}" || qest_error "Some packages failed."
     fi
+    qest_success "Arch package provisioning complete."
 fi

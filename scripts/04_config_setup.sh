@@ -10,6 +10,14 @@ if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY RUN] Would copy starship.toml to $HOME/.config/starship.toml"
 else
     if [ -f "$SCRIPT_DIR/.zshrc" ]; then
+        # Automated Rollback specific to user request
+        if [ -f "$HOME/.zshrc" ]; then
+            TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+            BACKUP_FILE="$HOME/.zshrc.qest.bak.$TIMESTAMP"
+            mv "$HOME/.zshrc" "$BACKUP_FILE"
+            echo "Backed up existing .zshrc to $BACKUP_FILE"
+        fi
+        
         cp "$SCRIPT_DIR/.zshrc" "$HOME/.zshrc"
         echo "Copied .zshrc to $HOME/.zshrc"
     else

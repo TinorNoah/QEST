@@ -1,0 +1,8 @@
+zoxide
+zsh-autosuggestions
+bat
+fzf
+ripgrep
+fd-find
+jq
+util-linux-user

@@ -27,12 +27,14 @@ if [[ "$OS" != "arch" && "$OS" != "manjaro" && "$OS_LIKE" != *"arch"* ]]; then
                 fi
             fi
 
-            BREW_PACKAGES="nushell starship direnv atuin chezmoi age helix zellij lazygit just moulti btop bottom viddy yazi eza zoxide fd git-delta rclone broot s5cmd lnav yq sd jless dasel choose-rust visidata logdy duf procs czkawka dust gdu erdtree lazydocker gping doggo xh bandwhich termshark atac gitleaks asciinema tealdeer navi grex"
+            # Load brew manifest into an array
+            mapfile -t BREW_PACKAGES_ARRAY < "$SCRIPT_DIR/manifests/brew_core.txt"
 
-            echo "Installing packages via Homebrew..."
-            for pkg in $BREW_PACKAGES; do
-                brew install "$pkg" || echo "Warning: Failed to install $pkg via Homebrew. Continuing..."
+            echo "Installing ${#BREW_PACKAGES_ARRAY[@]} packages via Homebrew..."
+            for pkg in "${BREW_PACKAGES_ARRAY[@]}"; do
+                qest_spin "Brewing $pkg..." brew install "$pkg" || qest_error "Failed to install $pkg via Homebrew. Continuing..."
             done
+            qest_success "Homebrew modern tools setup complete."
         else
             echo "Skipping modern CLI tools installation via Homebrew."
         fi
@@ -45,7 +47,7 @@ if ! command -v starship &> /dev/null; then
     if [[ "$DRY_RUN" == "1" ]]; then
         echo "[DRY RUN] Would download and run starship install script from starship.rs"
     else
-        curl -sS https://starship.rs/install.sh | sh -s -- -y || echo "Starship install requires sudo or failed. Continuing..."
+        qest_spin "Installing Starship theme engine..." sh -c 'curl -sS https://starship.rs/install.sh | sh -s -- -y' || qest_error "Starship install requires sudo or failed. Continuing..."
     fi
 else
     echo "Starship is already installed."
@@ -53,14 +55,14 @@ fi
 
 echo "Installing fzf-tab..."
 if [ ! -d "$HOME/.zsh/fzf-tab" ]; then
-    execute_git clone --depth 1 -- https://github.com/Aloxaf/fzf-tab.git "$HOME/.zsh/fzf-tab"
+    qest_spin "Cloning fzf-tab..." execute_git clone --depth 1 -- https://github.com/Aloxaf/fzf-tab.git "$HOME/.zsh/fzf-tab"
 else
     echo "fzf-tab is already installed."
 fi
 
 echo "Installing fast-syntax-highlighting..."
 if [ ! -d "$HOME/.zsh/fast-syntax-highlighting" ]; then
-    execute_git clone --depth 1 -- https://github.com/zdharma-continuum/fast-syntax-highlighting.git "$HOME/.zsh/fast-syntax-highlighting"
+    qest_spin "Cloning fast-syntax-highlighting..." execute_git clone --depth 1 -- https://github.com/zdharma-continuum/fast-syntax-highlighting.git "$HOME/.zsh/fast-syntax-highlighting"
 else
     echo "fast-syntax-highlighting is already installed."
 fi

@@ -25,7 +25,17 @@ export -f execute_sudo
 # Source OS detection
 source "$SCRIPT_DIR/scripts/01_os_detect.sh"
 
+# Source UI helper functions
+source "$SCRIPT_DIR/scripts/00_init_ui.sh"
+
+# Clean up any previous log
+if [[ "$DRY_RUN" != "1" ]]; then
+    rm -f /tmp/qest-install.log
+    touch /tmp/qest-install.log
+fi
+
 # Install distro specific packages
+qest_success "Initiating core package installation..."
 if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]] || contains "$OS_LIKE" "ubuntu" || contains "$OS_LIKE" "debian"; then
     source "$SCRIPT_DIR/scripts/02_install_debian.sh"
 elif [[ "$OS" == "fedora" ]] || contains "$OS_LIKE" "fedora"; then
@@ -41,12 +51,10 @@ source "$SCRIPT_DIR/scripts/03_install_extras.sh"
 source "$SCRIPT_DIR/scripts/04_config_setup.sh"
 source "$SCRIPT_DIR/scripts/05_set_default_shell.sh"
 
-echo "======================================================"
-echo "Setup is complete!"
+qest_success "Setup is strictly complete!"
 if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY RUN] Finished mocked setup."
 else
     echo "Please log out and log back in, or run 'zsh'"
-    echo "to start using your new environment."
+    echo "to start using your beautifully empowered environment."
 fi
-echo "======================================================"
