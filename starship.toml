@@ -7,9 +7,7 @@ $directory\
 [](fg:#434C5E bg:#4C566A)\
 $git_branch\
 $git_status\
-[](fg:#4C566A bg:#5E81AC)\
-$shell\
-[](fg:#5E81AC bg:#86BBD8)\
+[](fg:#4C566A bg:#86BBD8)\
 $c\
 $elixir\
 $elm\
@@ -31,15 +29,6 @@ command_timeout = 5000
 # add_newline = false
 
 # You can also replace your username with a neat symbol like  to save some space
-[shell]
-disabled = false
-style = "bg:#5E81AC"
-format = '[ $indicator ]($style)'
-fish_indicator = "fish" # 
-zsh_indicator = "zsh"
-nu_indicator = "nu"
-bash_indicator = "bash"
-
 [username]
 show_always = true
 style_user = "bg:#3B4252"
@@ -121,7 +110,6 @@ format = '[ $symbol ($version) ]($style)'
 
 [nim]
 symbol = " "
-style = "bg:#86BBD8"
 style = "bg:#86BBD8"
 format = '[ $symbol ($version) ]($style)'
 
