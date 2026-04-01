@@ -64,23 +64,34 @@ chmod +x qest.sh
 ./qest.sh
 ```
 
-### 🗂️ Architecture
+### 🗂️ Architecture & Execution Flow
 
-QEST is split into heavily scoped, `set -euo pipefail` hardened modules:
+QEST is split into heavily scoped, `set -euo pipefail` hardened modules. Here is how the orchestrator gracefully routes the installation based on your distribution:
 
-```text
-qest/
-  ├── qest.sh                      # The Orchestrator
-  ├── .zshrc                       # Pre-configured dotfile with modern aliases
-  ├── starship.toml                # Prompt design theme
-  └── scripts/
-      ├── 01_os_detect.sh          # Distro routing & fallback variables
-      ├── 02_install_arch.sh       # pacman / yay provisioner
-      ├── 02_install_debian.sh     # apt / apt-get provisioner
-      ├── 02_install_fedora.sh     # dnf provisioner
-      ├── 03_install_extras.sh     # Homebrew fallback & Plugin cloner
-      ├── 04_config_setup.sh       # Applies the dotfiles correctly
-      └── 05_set_default_shell.sh  # Zsh switch helper
+```mermaid
+graph TD
+    A[qest.sh Orchestrator] --> B[01_os_detect.sh]
+    B -->|Detects Distro| C{Which OS?}
+    
+    C -->|Arch / Manjaro| D[02_install_arch.sh]
+    D -->|yay / pacman| E[Install Native + Modern Tools]
+    
+    C -->|Ubuntu / Debian| F[02_install_debian.sh]
+    C -->|Fedora| G[02_install_fedora.sh]
+    F -->|apt| H[Install Core Native Tools]
+    G -->|dnf| H
+    
+    H --> I[03_install_extras.sh]
+    I -->|Homebrew Fallback| J[Install 30+ Modern Tools]
+    
+    E --> K[04_config_setup.sh]
+    J --> K
+    K -->|Apply .zshrc & Starship| L[05_set_default_shell.sh]
+    L --> M((Zsh Empowered!))
+    
+    style A fill:#2D3748,stroke:#4A5568,color:#fff
+    style M fill:#48BB78,stroke:#2F855A,color:#fff
+    style C fill:#ECC94B,stroke:#B7791F,color:#000
 ```
 
 ---
