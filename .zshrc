@@ -13,23 +13,41 @@ setopt autocd extendedglob
   export PATH="$HOME/.cargo/bin:$PATH"
   export TERM="xterm-256color"
 
-  # --- Plugins & Tools ---
-  # Zsh Autosuggestions
-  source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  # --- Modern Tool Inits ---
   # Zoxide (Smart cd)
-  eval "$(zoxide init zsh)"
+  if command -v zoxide &> /dev/null; then eval "$(zoxide init zsh)"; fi
+  # Atuin (Command history)
+  if command -v atuin &> /dev/null; then eval "$(atuin init zsh)"; fi
+  # Direnv (Environment switching)
+  if command -v direnv &> /dev/null; then eval "$(direnv hook zsh)"; fi
 
   # --- Aliases ---
-  # lsd Aliases
-  alias ls="lsd"
-  alias l="lsd -l"
-  alias la="lsd -a"
-  alias lla="lsd -la"
-  alias lt="lsd --tree"
-  # bat alias (use batcat on Ubuntu)
-  alias cat="batcat --paging=never"
+  # eza Aliases
+  alias ls="eza --icons"
+  alias l="eza -l --icons"
+  alias la="eza -la --icons"
+  alias lla="eza -la --icons"
+  alias lt="eza --tree --icons"
+  
+  # bat alias
+  if command -v bat &> /dev/null; then
+      alias cat="bat --paging=never"
+  elif command -v batcat &> /dev/null; then
+      alias cat="batcat --paging=never"
+  fi
+  
   # zoxide alias
   alias cd="z"
+
+  # Modern System Replacements
+  alias find="fd"
+  alias grep="rg"
+  alias top="btop"
+  alias du="dust"
+  alias df="duf"
+  alias ps="procs"
+  alias ping="gping"
+  alias dig="doggo"
 
   # --- Prompt Initialization ---
   # The manual prompt below is disabled because Starship is active.
@@ -42,13 +60,15 @@ setopt autocd extendedglob
   # FZF Keybindings
   source /usr/share/doc/fzf/examples/key-bindings.zsh
 
-  # --- Zsh Syntax Highlighting (MUST BE SOURCED LAST) ---
-  source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
   # --- Zsh Completion System ---
-  # Autocomplete plugin must be sourced before compinit
-  source ~/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh
   autoload -U compinit && compinit
+  # fzf-tab must be sourced after compinit
+  source ~/.zsh/fzf-tab/fzf-tab.plugin.zsh
 
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+  # --- Plugins & Tools ---
+  # Zsh Autosuggestions
+  source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  
+  # --- Fast Syntax Highlighting ---
+  # Should usually be sourced at the end
+  source ~/.zsh/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
