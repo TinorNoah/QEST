@@ -21,7 +21,7 @@ for DISTRO in "${DISTROS[@]}"; do
     docker build -t "qest-test-$DISTRO" -f "tests/$DISTRO.Dockerfile" .
     
     echo "Running container (this will execute qest.sh internally)..."
-    docker run --rm -it "qest-test-$DISTRO"
+    docker run --rm "qest-test-$DISTRO"
     
     echo "✅ $DISTRO passed baseline execution."
 done

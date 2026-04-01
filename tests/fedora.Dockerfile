@@ -12,5 +12,5 @@ WORKDIR /home/qestuser/quest
 # Copy the entire directory into the container
 COPY --chown=qestuser:qestuser . .
 
-# Emulate fresh install
-CMD ["/bin/bash", "./qest.sh"]
+# Emulate fresh install automatically bypassing interactive prompts, then verify system state
+CMD ["/bin/bash", "-c", "yes '' | ./qest.sh && ./tests/verify.sh"]
