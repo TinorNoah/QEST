@@ -51,7 +51,7 @@ QEST is designed to be interactive and heavily resilient. Do not clone it with `
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/qest.git ~/.qest
+git clone https://github.com/TinorNoah/QEST.git ~/.qest
 cd ~/.qest
 
 # 2. Make it executable
