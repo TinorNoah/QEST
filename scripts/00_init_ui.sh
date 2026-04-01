@@ -52,7 +52,7 @@ qest_spin() {
     shift
     if [[ "$DRY_RUN" == "1" ]]; then
         echo "[DRY RUN] Would spin on: $title -> COMMAND: $*"
-    elif command -v gum &> /dev/null; then
+    elif command -v gum &> /dev/null && [ -t 1 ]; then
         gum spin --spinner dot --title "$title" -- "$@" >> /tmp/qest-install.log 2>&1
     else
         echo "$title"
