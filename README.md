@@ -6,6 +6,7 @@
   [![Shell Check](https://img.shields.io/badge/Shell-Bash-blue.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
   [![Zsh](https://img.shields.io/badge/Shell-Zsh-blueviolet.svg?logo=powershell&logoColor=white)](https://zsh.sourceforge.io/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Tests](https://img.shields.io/badge/Tests-Docker-2496ED.svg?logo=docker&logoColor=white)](#-testing)
 </div>
 
 <br>
@@ -93,6 +94,88 @@ graph TD
     style M fill:#48BB78,stroke:#2F855A,color:#fff
     style C fill:#ECC94B,stroke:#B7791F,color:#000
 ```
+
+---
+
+## 🧪 Testing
+
+QEST ships with a Docker-based end-to-end test suite that provisions a real container for each supported distribution, runs the full `qest.sh` installer inside it, and then executes `tests/verify.sh` to validate that every tool, config file, and plugin was correctly set up.
+
+### Test Structure
+
+```
+tests/
+├── ubuntu.Dockerfile          # Ubuntu test environment
+├── fedora.Dockerfile          # Fedora test environment
+├── arch.Dockerfile            # Arch Linux test environment
+└── verify.sh                  # Post-install verification script
+test_docker.sh                 # Test orchestrator
+```
+
+`verify.sh` checks **58 items** across every category:
+
+| Category | Checks |
+|---|---|
+| Core native tools | `zsh`, `curl`, `git`, `fzf`, `jq`, `zoxide`, `bat`, `rg`, `fd` |
+| Zsh plugins | `fzf-tab`, `fast-syntax-highlighting` |
+| Config files | `~/.zshrc`, `~/.config/starship.toml` |
+| Shell & Env | `starship`, `atuin`, `direnv`, `chezmoi`, `age`, `nu` |
+| Editors & Multiplexers | `hx` (Helix), `zellij` |
+| Git & Workflow | `lazygit`, `just`, `moulti`, `gitleaks`, `delta` |
+| System Monitors | `btop`, `btm` (bottom), `viddy` |
+| Files & Navigation | `yazi`, `eza`, `broot`, `rclone`, `s5cmd` |
+| Text & Data | `lnav`, `yq`, `sd`, `jless`, `dasel`, `choose`, `vd`, `logdy` |
+| Disk Operations | `duf`, `procs`, `czkawka`, `dust`, `gdu`, `erd` (erdtree) |
+| Networking & Security | `gping`, `doggo`, `xh`, `bandwhich`, `termshark`, `atac` |
+| Utilities | `lazydocker`, `asciinema`, `tldr`, `navi`, `grex` |
+| Arch-only | `sysz` |
+
+### Running the Tests
+
+> **Requirements:** Docker must be installed and the daemon must be running.
+
+```bash
+# Run all three distros sequentially (recommended for CI)
+./test_docker.sh
+
+# Run all distros in parallel (faster, uses more CPU/memory)
+./test_docker.sh --parallel
+
+# Test a single distro
+./test_docker.sh ubuntu
+./test_docker.sh fedora
+./test_docker.sh arch
+
+# Force a clean build (no Docker layer cache)
+./test_docker.sh --no-cache
+
+# Combine flags freely
+./test_docker.sh ubuntu --no-cache
+```
+
+### Sample Output
+
+```
+╔══════════════════════════════════════════════════╗
+║      QEST  —  End-to-End Test Orchestrator       ║
+╚══════════════════════════════════════════════════╝
+
+  DISTRO      BUILD    RUN      PASSED    FAILED    SKIPPED    TIME
+  ──────────────────────────────────────────────────────────────────
+  ubuntu      ok       ok       58        0         1          19m 21s
+  fedora      ok       ok       58        0         1          22m 05s
+  arch        ok       ok       58        0         0          14m 42s
+  ──────────────────────────────────────────────────────────────────
+  TOTAL                         174       0         2          56m 08s
+
+  ╔══════════════════════════════════════╗
+  ║   ✔   ALL TESTS PASSED               ║
+  ╚══════════════════════════════════════╝
+```
+
+If any check fails, the orchestrator automatically tails the relevant container log inline so you never have to dig through files manually. The exit code is `0` on full pass and `1` on any failure, making it CI-friendly.
+
+> See [Known Issues](https://github.com/TinorNoah/QEST/issues?q=label%3A%22known+issue%22) for tracked limitations and workarounds.
 
 ---
 
