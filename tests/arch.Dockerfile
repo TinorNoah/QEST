@@ -1,5 +1,10 @@
 FROM --platform=linux/amd64 archlinux:latest
 
+# Disable pacman's seccomp sandbox — required in Docker environments that
+# restrict certain syscalls (e.g. Docker Desktop on macOS / Apple Silicon).
+# Without this, pacman fails with "error restricting syscalls via seccomp: 22".
+RUN sed -i 's/^\[options\]/[options]\nDisableSandbox/' /etc/pacman.conf
+
 RUN pacman -Syu --noconfirm && pacman -S --noconfirm sudo curl git base-devel
 
 # Create a non-root test user with passwordless sudo
