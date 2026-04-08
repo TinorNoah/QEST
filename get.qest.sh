@@ -8,6 +8,9 @@ cleanup() {
 trap cleanup EXIT
 
 detect_os() {
+  if [[ "$(uname)" == "Darwin" ]]; then
+    return 0
+  fi
   if [[ ! -f /etc/os-release ]]; then
     echo "Unsupported system: /etc/os-release not found."
     exit 1

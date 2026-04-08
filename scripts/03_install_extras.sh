@@ -10,7 +10,7 @@ execute_git() {
 }
 
 # Install extended toolset only when explicitly requested.
-if [[ "${INSTALL_EXTRAS:-0}" == "1" ]] && [[ "$OS" != "arch" && "$OS" != "manjaro" && "$OS_LIKE" != *"arch"* ]]; then
+if [[ "${INSTALL_EXTRAS:-0}" == "1" ]] && [[ "$OS" != "arch" && "$OS" != "manjaro" && "$OS_LIKE" != *"arch"* && "$OS" != "macos" ]]; then
     echo "This script can install the remaining 30+ modern CLI tools via Homebrew."
     if [[ "$DRY_RUN" == "1" ]]; then
         echo "[DRY RUN] Would prompt to install Homebrew and 30+ modern tools"
@@ -25,10 +25,16 @@ if [[ "${INSTALL_EXTRAS:-0}" == "1" ]] && [[ "$OS" != "arch" && "$OS" != "manjar
                 if [ -d "/home/linuxbrew/.linuxbrew" ]; then
                     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
                 fi
+                if [[ "$OS" == "macos" ]] && command -v brew &> /dev/null; then
+                    eval "$("$(command -v brew)" shellenv)"
+                fi
             fi
 
             # Load brew manifest into an array
-            mapfile -t BREW_PACKAGES_ARRAY < "$SCRIPT_DIR/manifests/brew_core.txt"
+            BREW_PACKAGES_ARRAY=()
+            while IFS= read -r pkg; do
+                [[ -n "$pkg" ]] && BREW_PACKAGES_ARRAY+=("$pkg")
+            done < "$SCRIPT_DIR/manifests/brew_core.txt"
 
             echo "Installing ${#BREW_PACKAGES_ARRAY[@]} packages via Homebrew..."
             qest_spin "Brewing tool bundle..." run_with_retry brew install "${BREW_PACKAGES_ARRAY[@]}" || qest_error "Some Homebrew packages failed. Continuing..."

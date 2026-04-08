@@ -25,8 +25,10 @@ qest_apply_profile() {
             INSTALL_DEFAULT_SHELL=1
             ;;
         custom)
-            local selections
-            mapfile -t selections < <(qest_pick_many \
+            local selections=()
+            while IFS= read -r selected_line; do
+                [[ -n "$selected_line" ]] && selections+=("$selected_line")
+            done < <(qest_pick_many \
                 "Pick what to install" \
                 "Shell stack (zsh + starship + plugins)" \
                 "Essentials CLI bundle (bat, rg, fd, eza, btop, etc.)" \

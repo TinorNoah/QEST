@@ -3,10 +3,28 @@ set -euo pipefail
 
 echo "Starting OS detection..."
 
+# Function to check if a string contains another
+contains() {
+    echo "$1" | grep -q "$2"
+}
+export -f contains
+
 # Detect macOS explicitly
 if [[ "$(uname)" == "Darwin" ]]; then
-    echo "Error: macOS is currently unsupported by this script."
-    exit 1
+    OS="macos"
+    OS_LIKE="darwin"
+    PACKAGES="curl git"
+
+    # zsh is bundled on macOS, but keep the guard for custom/minimal setups.
+    if ! command -v zsh &> /dev/null; then
+        PACKAGES="curl git zsh"
+    fi
+
+    echo "Detected OS: $OS / $OS_LIKE"
+    export OS
+    export OS_LIKE
+    export PACKAGES
+    return 0
 fi
 
 # Detect OS
@@ -20,12 +38,6 @@ else
 fi
 
 echo "Detected OS: $OS / $OS_LIKE"
-
-# Function to check if a string contains another
-contains() {
-    echo "$1" | grep -q "$2"
-}
-export -f contains
 
 PACKAGES="curl git"
 

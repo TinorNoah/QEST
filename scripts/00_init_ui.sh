@@ -47,6 +47,12 @@ enabled=1
 gpgcheck=1
 gpgkey=https://repo.charm.sh/yum/gpg.key' | execute_sudo tee /etc/yum.repos.d/charm.repo > /dev/null
         execute_sudo dnf install -y gum || true
+        return 0
+    fi
+    if [[ "$OS" == "macos" ]]; then
+        if command -v brew &> /dev/null; then
+            brew install gum || true
+        fi
     fi
 }
 

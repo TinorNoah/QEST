@@ -1,0 +1,9 @@
+bat
+btop
+eza
+fd
+fzf
+jq
+ripgrep
+zoxide
+zsh-autosuggestions

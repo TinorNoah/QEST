@@ -15,15 +15,15 @@
 
 <br>
 
-**QEST (Quite Effective Setup Tool)** is a cross-distribution modular setup script that provisions a fresh Linux installation with an ecosystem of over **40+ lightning-fast, modern, Rust and Go-based CLI tools**. 
+**QEST (Quite Effective Setup Tool)** is a cross-platform modular setup script that provisions a fresh macOS or Linux installation with an ecosystem of over **40+ lightning-fast, modern, Rust and Go-based CLI tools**. 
 
-It transforms standard `bash` environments into a beautiful, highly productive `zsh` ecosystem, replacing legacy commands with 21st-century counterparts (`eza`, `bat`, `fd`, `rg`, `zoxide`, `btop`) while gracefully handling package management across Debian/Ubuntu, Fedora, and Arch Linux.
+It transforms standard `bash` environments into a beautiful, highly productive `zsh` ecosystem, replacing legacy commands with 21st-century counterparts (`eza`, `bat`, `fd`, `rg`, `zoxide`, `btop`) while gracefully handling package management across macOS, Debian/Ubuntu, Fedora, and Arch Linux.
 
 ---
 
 ## ✨ Features
 
-- **🧠 Smart OS Detection**: Automatically adapts to Ubuntu, Debian, Fedora, Arch, and Manjaro, deploying the correct native package manager (`apt`, `dnf`, `pacman`).
+- **🧠 Smart OS Detection**: Automatically adapts to macOS, Ubuntu, Debian, Fedora, Arch, and Manjaro, deploying the correct package manager (`brew`, `apt`, `dnf`, `pacman`).
 - **⚡ One-command Bootstrap**: Fresh-machine setup with `curl -fsSL https://get.qest.sh | bash`.
 - **🧩 First-run Presets**: Choose `full`, `shell`, `essentials`, or `custom` at launch.
 - **📦 Mega Toolset Payload**: Installs 40+ next-generation tools including Zellij, Helix, Yazi, Atuin, Starship, Lazygit, and Lazydocker.
@@ -138,7 +138,9 @@ graph TD
     B -->|Detects Distro| C{Which OS?}
     
     C -->|Arch / Manjaro| D[02_install_arch.sh]
+    C -->|macOS| N[02_install_macos.sh]
     D -->|yay / pacman| E[Install Native + Modern Tools]
+    N -->|brew| E
     
     C -->|Ubuntu / Debian| F[02_install_debian.sh]
     C -->|Fedora| G[02_install_fedora.sh]

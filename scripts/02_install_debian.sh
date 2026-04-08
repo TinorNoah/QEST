@@ -20,7 +20,10 @@ fi
 
 if [[ -n "$manifest_path" ]]; then
     echo "Installing native tools from: $manifest_path"
-    mapfile -t DEBIAN_PACKAGES_ARRAY < "$manifest_path"
+    DEBIAN_PACKAGES_ARRAY=()
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && DEBIAN_PACKAGES_ARRAY+=("$pkg")
+    done < "$manifest_path"
     if [[ "${#DEBIAN_PACKAGES_ARRAY[@]}" -gt 0 ]]; then
         qest_spin "Installing ${#DEBIAN_PACKAGES_ARRAY[@]} native tools..." run_with_retry execute_sudo apt-get install -y "${DEBIAN_PACKAGES_ARRAY[@]}"
     fi

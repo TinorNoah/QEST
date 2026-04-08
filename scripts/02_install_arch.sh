@@ -47,7 +47,10 @@ if [[ "$DRY_RUN" == "1" ]]; then
     return 0
 fi
 
-mapfile -t ARCH_PACKAGES_ARRAY < "$manifest_path"
+ARCH_PACKAGES_ARRAY=()
+while IFS= read -r pkg; do
+    [[ -n "$pkg" ]] && ARCH_PACKAGES_ARRAY+=("$pkg")
+done < "$manifest_path"
 
 if [[ "${#ARCH_PACKAGES_ARRAY[@]}" -eq 0 ]]; then
     qest_success "No packages to install for selected Arch profile."

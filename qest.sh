@@ -122,12 +122,14 @@ preflight_checks() {
             echo "Network check failed. Please verify internet connectivity."
             exit 1
         fi
-        if ! sudo -n true &>/dev/null; then
-            echo "sudo privileges are required. You may be prompted now."
-            sudo -v || {
-                echo "Unable to acquire sudo credentials."
-                exit 1
-            }
+        if [[ "${OS:-}" != "macos" ]]; then
+            if ! sudo -n true &>/dev/null; then
+                echo "sudo privileges are required. You may be prompted now."
+                sudo -v || {
+                    echo "Unable to acquire sudo credentials."
+                    exit 1
+                }
+            fi
         fi
     fi
 }
@@ -158,8 +160,10 @@ if [[ "${INSTALL_SHELL_STACK:-0}" == "1" || "${INSTALL_ESSENTIALS:-0}" == "1" ||
         source "$SCRIPT_DIR/scripts/02_install_fedora.sh"
     elif [[ "$OS" == "arch" || "$OS" == "manjaro" ]] || contains "$OS_LIKE" "arch"; then
         source "$SCRIPT_DIR/scripts/02_install_arch.sh"
+    elif [[ "$OS" == "macos" ]]; then
+        source "$SCRIPT_DIR/scripts/02_install_macos.sh"
     else
-        echo "Unsupported Linux OS: $OS. Exiting."
+        echo "Unsupported OS: $OS. Exiting."
         exit 1
     fi
 else

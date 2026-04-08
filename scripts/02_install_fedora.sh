@@ -19,7 +19,10 @@ fi
 
 if [[ -n "$manifest_path" ]]; then
     echo "Installing native tools from: $manifest_path"
-    mapfile -t FEDORA_PACKAGES_ARRAY < "$manifest_path"
+    FEDORA_PACKAGES_ARRAY=()
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && FEDORA_PACKAGES_ARRAY+=("$pkg")
+    done < "$manifest_path"
     if [[ "${#FEDORA_PACKAGES_ARRAY[@]}" -gt 0 ]]; then
         qest_spin "Installing ${#FEDORA_PACKAGES_ARRAY[@]} native tools..." run_with_retry execute_sudo dnf install -y "${FEDORA_PACKAGES_ARRAY[@]}"
     fi

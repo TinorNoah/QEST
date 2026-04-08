@@ -1,0 +1,12 @@
+name = "qest-bootstrap"
+main = "src/index.js"
+compatibility_date = "2026-04-08"
+workers_dev = true
+preview_urls = true
+routes = [
+  { pattern = "get.brainafk.in/*", zone_name = "brainafk.in" },
+  { pattern = "quest.brainafk.in/*", zone_name = "brainafk.in" }
+]
+
+[observability]
+enabled = true
