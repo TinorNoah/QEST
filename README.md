@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="./logo.png" alt="QEST logo" width="180" />
-  <h1>🚀 QEST</h1>
+  <h1>QEST</h1>
   <p><strong>Quite Effective Setup Tool</strong></p>
   <p>An automated, zero-friction, modular environment builder for modern Linux power users.</p>
 
