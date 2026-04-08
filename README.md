@@ -114,6 +114,11 @@ See full plan in [`ROADMAP.md`](./ROADMAP.md). High-level batches:
 - `v0.2`: extended opt-in set after cross-OS validation
 - `v0.3`: advanced/experimental set with staged promotion
 
+Track progress:
+
+- [v0.1 milestone](https://github.com/TinorNoah/QEST/milestone/1)
+- [v0.1 release tracker](https://github.com/TinorNoah/QEST/issues/9)
+
 ## Troubleshooting
 
 - If `install.brainafk.in` fails temporarily:
@@ -129,3 +134,9 @@ See full plan in [`ROADMAP.md`](./ROADMAP.md). High-level batches:
   ```bash
   go run ./cmd/qest --no-gum
   ```
+
+## Wiki
+
+Extended implementation notes and operational docs live in the project wiki:
+
+- [QEST Wiki Home](https://github.com/TinorNoah/QEST/wiki)
