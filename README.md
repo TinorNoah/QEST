@@ -59,7 +59,7 @@ QEST is designed to be interactive and heavily resilient. Do not clone it with `
 ### 1) Fast path (new machine)
 
 ```bash
-curl -fsSL https://get.qest.sh | bash
+curl -fsSL https://get.brainafk.in | bash
 ```
 
 ### 2) Repository path
