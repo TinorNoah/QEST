@@ -33,7 +33,7 @@ PACKAGES="curl git"
 if ! command -v zsh &> /dev/null; then
     echo "Zsh is not found on your system."
     # Wait, in dry-run we might bypass prompting, but typically prompts are fine
-    if [[ "$DRY_RUN" == "1" ]]; then
+    if [[ "$DRY_RUN" == "1" || "${AUTO_YES:-0}" == "1" ]]; then
         echo "[DRY RUN] Would prompt to install Zsh"
         PACKAGES="curl git zsh"
     else

@@ -3,14 +3,27 @@ set -euo pipefail
 
 echo "Updating packages and installing base dependencies (Debian/Ubuntu)..."
 
-qest_spin "Updating apt repositories..." execute_sudo apt-get update
+qest_spin "Updating apt repositories..." run_with_retry execute_sudo apt-get update
 
 # PACKAGES variable is exported from 01_os_detect.sh
 # shellcheck disable=SC2086
-qest_spin "Installing base essentials..." execute_sudo apt-get install -y $PACKAGES
+qest_spin "Installing base essentials..." run_with_retry execute_sudo apt-get install -y $PACKAGES
 
-echo "Installing native core tools..."
-mapfile -t DEBIAN_PACKAGES_ARRAY < "$SCRIPT_DIR/manifests/debian_core.txt"
+manifest_path=""
+if [[ "${INSTALL_EXTRAS:-0}" == "1" ]]; then
+    manifest_path="$SCRIPT_DIR/manifests/debian_core.txt"
+elif [[ "${INSTALL_ESSENTIALS:-0}" == "1" ]]; then
+    manifest_path="$SCRIPT_DIR/manifests/profiles/debian/essentials.txt"
+elif [[ "${INSTALL_SHELL_STACK:-0}" == "1" ]]; then
+    manifest_path="$SCRIPT_DIR/manifests/profiles/debian/shell.txt"
+fi
 
-qest_spin "Installing ${#DEBIAN_PACKAGES_ARRAY[@]} core native tools..." execute_sudo apt-get install -y "${DEBIAN_PACKAGES_ARRAY[@]}"
-qest_success "Debian core package provisioning complete."
+if [[ -n "$manifest_path" ]]; then
+    echo "Installing native tools from: $manifest_path"
+    mapfile -t DEBIAN_PACKAGES_ARRAY < "$manifest_path"
+    if [[ "${#DEBIAN_PACKAGES_ARRAY[@]}" -gt 0 ]]; then
+        qest_spin "Installing ${#DEBIAN_PACKAGES_ARRAY[@]} native tools..." run_with_retry execute_sudo apt-get install -y "${DEBIAN_PACKAGES_ARRAY[@]}"
+    fi
+fi
+
+qest_success "Debian package provisioning complete."

@@ -20,6 +20,8 @@ It transforms standard `bash` environments into a beautiful, highly productive `
 ## ✨ Features
 
 - **🧠 Smart OS Detection**: Automatically adapts to Ubuntu, Debian, Fedora, Arch, and Manjaro, deploying the correct native package manager (`apt`, `dnf`, `pacman`).
+- **⚡ One-command Bootstrap**: Fresh-machine setup with `curl -fsSL https://get.qest.sh | bash`.
+- **🧩 First-run Presets**: Choose `full`, `shell`, `essentials`, or `custom` at launch.
 - **📦 Mega Toolset Payload**: Installs 40+ next-generation tools including Zellij, Helix, Yazi, Atuin, Starship, Lazygit, and Lazydocker.
 - **🍺 Homebrew & AUR Synergy**: Utilizes `yay` internally for Arch users to automatically provision the AUR, while providing a seamless `brew` fallback installer for Debian and Fedora edge-cases.
 - **⚡ Supercharged Zsh**: Configures `.zshrc` out of the box with `zsh-autosuggestions`, `fzf-tab`, `fast-syntax-highlighting`, and the `Starship` prompt.
@@ -48,7 +50,15 @@ A subset of the tools QEST automatically provisions:
 
 ## 🚀 Installation
 
-QEST is designed to be interactive and heavily resilient. Do not clone it with `sudo`; the script elegantly elevates permissions on a per-command basis, protecting your home directory.
+QEST is designed to be interactive and heavily resilient. Do not clone it with `sudo`; the script elevates permissions on a per-command basis, protecting your home directory.
+
+### 1) Fast path (new machine)
+
+```bash
+curl -fsSL https://get.qest.sh | bash
+```
+
+### 2) Repository path
 
 ```bash
 # 1. Clone the repository
@@ -64,6 +74,55 @@ chmod +x qest.sh
 # 4. Execute the setup
 ./qest.sh
 ```
+
+### Presets
+
+You can run non-interactively with a preset:
+
+```bash
+./qest.sh --yes --profile full
+./qest.sh --yes --profile shell
+./qest.sh --yes --profile essentials
+./qest.sh --yes --profile custom
+```
+
+| Preset | What it installs |
+|---|---|
+| `full` | Current default behavior: shell stack + essentials + extended extras + config |
+| `shell` | `zsh` + `starship` + zsh plugins + dotfiles |
+| `essentials` | Shell stack + daily CLI tools (`bat`, `rg`, `fd`, `zoxide`, `eza`, `btop`, etc.) |
+| `custom` | Interactive pick-and-choose install groups |
+
+### Dotfiles source from GitHub
+
+Use your own dotfiles repo for `.zshrc` and `starship.toml`:
+
+```bash
+./qest.sh --dotfiles-repo https://github.com/you/your-dotfiles.git
+```
+
+If remote dotfiles fail to fetch, QEST falls back to bundled defaults.
+
+### Non-interactive and CI-friendly flags
+
+```bash
+# Fully non-interactive
+./qest.sh --yes --profile full --no-gum
+
+# Safe preview without system changes
+./qest.sh --dry-run --yes --profile essentials
+
+# Tune retry behavior for flaky networks
+QEST_RETRIES=5 QEST_RETRY_DELAY=3 ./qest.sh --yes --profile full
+```
+
+### Troubleshooting quick hits
+
+- **`sudo` prompt/failure**: run `sudo -v` first, then rerun QEST.
+- **No TUI shown**: Gum is optional; non-interactive shells automatically use plain prompts/output.
+- **Dotfiles not applied from GitHub**: verify repo contains `.zshrc` and `starship.toml` at repo root.
+- **Homebrew tools not found**: open a new shell or run `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"`.
+- **Need a clean retry**: rerun `./qest.sh --yes --profile <profile>`; installer is designed for safe reruns.
 
 ### 🗂️ Architecture & Execution Flow
 

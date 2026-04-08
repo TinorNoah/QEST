@@ -12,9 +12,7 @@ if [ "$SHELL" != "$ZSH_PATH" ]; then
     if [[ "$DRY_RUN" == "1" ]]; then
         echo "[DRY RUN] Would prompt and run 'chsh -s $ZSH_PATH'"
     else
-        read -p "Would you like to make Zsh your default shell? [Y/n] " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        if qest_confirm "Would you like to make Zsh your default shell?" 1; then
             echo "Changing default shell to zsh..."
             chsh -s "$ZSH_PATH" || echo "Please run 'chsh -s $ZSH_PATH' manually to change your shell."
         else

@@ -16,4 +16,4 @@ WORKDIR /home/qestuser/quest
 COPY --chown=qestuser:qestuser . .
 
 # Emulate fresh install automatically bypassing interactive prompts, then verify system state
-CMD ["/bin/bash", "-c", "yes '' | ./qest.sh && ./tests/verify.sh"]
+CMD ["/bin/bash", "-c", "./qest.sh --yes --profile full && ./tests/verify.sh"]
