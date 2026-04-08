@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="./logo.png" alt="QEST logo" width="180" />
   <h1>🚀 QEST</h1>
   <p><strong>Quite Effective Setup Tool</strong></p>
   <p>An automated, zero-friction, modular environment builder for modern Linux power users.</p>
@@ -8,6 +9,10 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Tests](https://img.shields.io/badge/Tests-Docker-2496ED.svg?logo=docker&logoColor=white)](#-testing)
 </div>
+
+<br>
+
+![QEST hero preview](./hero.png)
 
 <br>
 
