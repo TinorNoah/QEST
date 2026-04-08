@@ -24,7 +24,7 @@ It transforms standard `bash` environments into a beautiful, highly productive `
 ## ✨ Features
 
 - **🧠 Smart OS Detection**: Automatically adapts to macOS, Ubuntu, Debian, Fedora, Arch, and Manjaro, deploying the correct package manager (`brew`, `apt`, `dnf`, `pacman`).
-- **⚡ One-command Bootstrap**: Fresh-machine setup with `curl -fsSL https://get.qest.sh | bash`.
+- **⚡ One-command Bootstrap**: Fresh-machine setup with `curl -fsSL https://install.brainafk.in | bash`.
 - **🧩 First-run Presets**: Choose `full`, `shell`, `essentials`, or `custom` at launch.
 - **📦 Mega Toolset Payload**: Installs 40+ next-generation tools including Zellij, Helix, Yazi, Atuin, Starship, Lazygit, and Lazydocker.
 - **🍺 Homebrew & AUR Synergy**: Utilizes `yay` internally for Arch users to automatically provision the AUR, while providing a seamless `brew` fallback installer for Debian and Fedora edge-cases.
@@ -59,7 +59,7 @@ QEST is designed to be interactive and heavily resilient. Do not clone it with `
 ### 1) Fast path (new machine)
 
 ```bash
-curl -fsSL https://get.brainafk.in | bash
+curl -fsSL https://install.brainafk.in | bash
 ```
 
 ### 2) Repository path
