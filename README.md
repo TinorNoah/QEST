@@ -1,249 +1,131 @@
 <div align="center">
   <h1>QEST</h1>
   <p><strong>Quite Effective Setup Tool</strong></p>
-  <p>An automated, zero-friction, modular environment builder for modern Linux power users.</p>
-
-  [![Shell Check](https://img.shields.io/badge/Shell-Bash-blue.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
-  [![Zsh](https://img.shields.io/badge/Shell-Zsh-blueviolet.svg?logo=powershell&logoColor=white)](https://zsh.sourceforge.io/)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Tests](https://img.shields.io/badge/Tests-Docker-2496ED.svg?logo=docker&logoColor=white)](#-testing)
+  <p>Single-command Linux bootstrap with a full interactive terminal wizard.</p>
 </div>
 
 <br>
 
 ![QEST hero preview](./hero.png)
 
-<br>
+## What QEST is
 
-**QEST (Quite Effective Setup Tool)** is a cross-platform modular setup script that provisions a fresh macOS or Linux installation with an ecosystem of over **40+ lightning-fast, modern, Rust and Go-based CLI tools**. 
-
-It transforms standard `bash` environments into a beautiful, highly productive `zsh` ecosystem, replacing legacy commands with 21st-century counterparts (`eza`, `bat`, `fd`, `rg`, `zoxide`, `btop`) while gracefully handling package management across macOS, Debian/Ubuntu, Fedora, and Arch Linux.
-
----
-
-## ✨ Features
-
-- **🧠 Smart OS Detection**: Automatically adapts to macOS, Ubuntu, Debian, Fedora, Arch, and Manjaro, deploying the correct package manager (`brew`, `apt`, `dnf`, `pacman`).
-- **⚡ One-command Bootstrap**: Fresh-machine setup with `curl -fsSL https://install.brainafk.in | bash`.
-- **🧩 First-run Presets**: Choose `full`, `shell`, `essentials`, or `custom` at launch.
-- **📦 Mega Toolset Payload**: Installs 40+ next-generation tools including Zellij, Helix, Yazi, Atuin, Starship, Lazygit, and Lazydocker.
-- **🍺 Homebrew & AUR Synergy**: Utilizes `yay` internally for Arch users to automatically provision the AUR, while providing a seamless `brew` fallback installer for Debian and Fedora edge-cases.
-- **⚡ Supercharged Zsh**: Configures `.zshrc` out of the box with `zsh-autosuggestions`, `fzf-tab`, `fast-syntax-highlighting`, and the `Starship` prompt.
-- **⚙️ Modern Aliasing**: Automatically proxies your muscle-memory default commands to their modern Rust variants (`ls` -> `eza`, `cat` -> `bat`, `find` -> `fd`, `cd` -> `zoxide`).
-- **🛡️ Dry-Run Mode**: Test your deployments before changing state. Append `--dry-run` and QEST will beautifully simulate system mutations, `sudo` access, and Github clones safely.
-
----
-
-## 🛠️ Included Arsenal
-
-A subset of the tools QEST automatically provisions:
-
-| Category | Tools Included |
-|---|---|
-| **Shell & Env** | `zsh`, `nushell`, `starship`, `direnv`, `atuin`, `chezmoi`, `age` |
-| **Editors & Multiplexers** | `helix` (hx), `zellij` |
-| **Git & Projects** | `lazygit`, `just`, `moulti` |
-| **Monitors & Metrics** | `btop`, `bottom`, `viddy`, `sysz` |
-| **Files & Navigation** | `yazi`, `eza`, `zoxide`, `fzf`, `fd`, `bat`, `delta`, `rclone`, `broot`, `s5cmd` |
-| **Text & Data Processing** | `lnav`, `jq`, `yq`, `ripgrep`, `sd`, `jless`, `dasel`, `choose`, `visidata`, `logdy` |
-| **Disk Operations** | `duf`, `procs`, `czkawka`, `dust`, `gdu`, `erdtree` |
-| **Networking & Security** | `gping`, `doggo`, `xh`, `curl`, `wget`, `bandwhich`, `termshark`, `atac`, `gitleaks` |
-| **Utilities** | `lazydocker`, `asciinema`, `tealdeer`, `navi`, `grex` |
-
----
-
-## 🚀 Installation
-
-QEST is designed to be interactive and heavily resilient. Do not clone it with `sudo`; the script elevates permissions on a per-command basis, protecting your home directory.
-
-### 1) Fast path (new machine)
+QEST installs a modern shell environment on fresh Linux machines with one command:
 
 ```bash
 curl -fsSL https://install.brainafk.in | bash
 ```
 
-### 2) Repository path
+The bootstrap script stays tiny, downloads a prebuilt `qest` binary, verifies checksums, and runs the installer wizard.
+
+## Architecture
+
+1. **Bootstrap script**: [`get.qest.sh`](./get.qest.sh)
+   - Detects distro + architecture.
+   - Checks `curl`, `sudo`, internet access.
+   - Downloads `qest-linux-amd64` or `qest-linux-arm64` from GitHub Releases.
+   - Verifies SHA256 and executes the binary.
+2. **Installer binary**: [`cmd/qest/main.go`](./cmd/qest/main.go)
+   - Full-screen Bubble Tea wizard (TTY mode).
+   - Plain fallback for `--no-gum` / non-TTY.
+   - Phase-based install engine with per-tool source resolution.
+3. **Tool catalog**: [`manifests/tools/`](./manifests/tools)
+   - One TOML file per tool.
+   - Encodes category, tier, install source per OS, package mapping, validation state.
+4. **Cloudflare Worker**: [`cloudflare-worker/src/index.js`](./cloudflare-worker/src/index.js)
+   - Serves the latest bootstrap script from GitHub.
+   - Returns actionable fallback command if upstream fetch fails.
+
+## Current support
+
+- **OS**: Ubuntu/Debian, Fedora, Arch/Manjaro
+- **CPU**: amd64, arm64
+- **Modes**:
+  - Interactive TTY -> full-screen wizard
+  - `--yes` -> non-interactive install with defaults
+  - `--dry-run` -> preview commands
+  - `--no-gum` -> plain sequential mode
+
+## v0.1 validated default set
+
+QEST currently defaults to a small cross-OS validated set:
+
+- shell/core: `zsh`, `starship`, `zsh-autosuggestions`, `fzf`, `zoxide`
+- essentials: `bat`, `ripgrep`, `fd`, `jq`, `btop`, `eza`, `git-delta`
+- editor/workflow: `helix`, `zellij`, `lazygit`
+- config: bundled `.zshrc` + `starship.toml` with backup/restore
+
+Verification gate:
+
+- [`tests/verify.sh`](./tests/verify.sh) validates v0.1 tooling/config presence.
+
+## Tool source strategy
+
+Each tool is resolved per OS using a source policy from TOML manifests:
+
+- `native` -> apt/dnf/pacman
+- `brew` -> Homebrew fallback (primarily Ubuntu/Fedora for missing packages)
+- `unsupported` -> omitted from current install plan and marked for future rollout
+
+## Run locally from repo
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/TinorNoah/QEST.git ~/.qest
-cd ~/.qest
+# interactive
+go run ./cmd/qest
 
-# 2. Make it executable
-chmod +x qest.sh
+# non-interactive defaults
+go run ./cmd/qest --yes --no-gum
 
-# 3. (Optional) Run a dry-run to see exactly what will execute
-./qest.sh --dry-run
-
-# 4. Execute the setup
-./qest.sh
+# dry-run
+go run ./cmd/qest --dry-run --yes --no-gum
 ```
 
-### Presets
+## CI and release
 
-You can run non-interactively with a preset:
+- CI: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+  - ShellCheck for bootstrap/scripts
+  - `go build` and `go test`
+  - Docker matrix smoke checks
+- Tagged release: [`.github/workflows/release.yml`](./.github/workflows/release.yml)
+  - static binaries (`CGO_ENABLED=0`) for linux/amd64 and linux/arm64
+  - checksum files
+  - release assets:
+    - `qest-linux-amd64`
+    - `qest-linux-amd64.sha256`
+    - `qest-linux-arm64`
+    - `qest-linux-arm64.sha256`
 
-```bash
-./qest.sh --yes --profile full
-./qest.sh --yes --profile shell
-./qest.sh --yes --profile essentials
-./qest.sh --yes --profile custom
-```
+## What has been done
 
-| Preset | What it installs |
-|---|---|
-| `full` | Current default behavior: shell stack + essentials + extended extras + config |
-| `shell` | `zsh` + `starship` + zsh plugins + dotfiles |
-| `essentials` | Shell stack + daily CLI tools (`bat`, `rg`, `fd`, `zoxide`, `eza`, `btop`, etc.) |
-| `custom` | Interactive pick-and-choose install groups |
+- Cloudflare worker route set to `install.brainafk.in`.
+- Bootstrap switched from git clone flow to binary+checksum flow.
+- Go installer foundation implemented with:
+  - wizard selection model
+  - plain fallback mode
+  - phase execution
+  - per-tool TOML manifest loading
+- v0.1 tool manifests created under [`manifests/tools/`](./manifests/tools).
 
-### Dotfiles source from GitHub
+## Planned next (v0.x roadmap)
 
-Use your own dotfiles repo for `.zshrc` and `starship.toml`:
+See full plan in [`ROADMAP.md`](./ROADMAP.md). High-level batches:
 
-```bash
-./qest.sh --dotfiles-repo https://github.com/you/your-dotfiles.git
-```
+- `v0.1`: validated default set (current target)
+- `v0.2`: extended opt-in set after cross-OS validation
+- `v0.3`: advanced/experimental set with staged promotion
 
-If remote dotfiles fail to fetch, QEST falls back to bundled defaults.
+## Troubleshooting
 
-### Non-interactive and CI-friendly flags
-
-```bash
-# Fully non-interactive
-./qest.sh --yes --profile full --no-gum
-
-# Safe preview without system changes
-./qest.sh --dry-run --yes --profile essentials
-
-# Tune retry behavior for flaky networks
-QEST_RETRIES=5 QEST_RETRY_DELAY=3 ./qest.sh --yes --profile full
-```
-
-### Troubleshooting quick hits
-
-- **`sudo` prompt/failure**: run `sudo -v` first, then rerun QEST.
-- **No TUI shown**: Gum is optional; non-interactive shells automatically use plain prompts/output.
-- **Dotfiles not applied from GitHub**: verify repo contains `.zshrc` and `starship.toml` at repo root.
-- **Homebrew tools not found**: open a new shell or run `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"`.
-- **Need a clean retry**: rerun `./qest.sh --yes --profile <profile>`; installer is designed for safe reruns.
-
-### 🗂️ Architecture & Execution Flow
-
-QEST is split into heavily scoped, `set -euo pipefail` hardened modules. Here is how the orchestrator gracefully routes the installation based on your distribution:
-
-```mermaid
-graph TD
-    A[qest.sh Orchestrator] --> B[01_os_detect.sh]
-    B -->|Detects Distro| C{Which OS?}
-    
-    C -->|Arch / Manjaro| D[02_install_arch.sh]
-    C -->|macOS| N[02_install_macos.sh]
-    D -->|yay / pacman| E[Install Native + Modern Tools]
-    N -->|brew| E
-    
-    C -->|Ubuntu / Debian| F[02_install_debian.sh]
-    C -->|Fedora| G[02_install_fedora.sh]
-    F -->|apt| H[Install Core Native Tools]
-    G -->|dnf| H
-    
-    H --> I[03_install_extras.sh]
-    I -->|Homebrew Fallback| J[Install 30+ Modern Tools]
-    
-    E --> K[04_config_setup.sh]
-    J --> K
-    K -->|Apply .zshrc & Starship| L[05_set_default_shell.sh]
-    L --> M((Zsh Empowered!))
-    
-    style A fill:#2D3748,stroke:#4A5568,color:#fff
-    style M fill:#48BB78,stroke:#2F855A,color:#fff
-    style C fill:#ECC94B,stroke:#B7791F,color:#000
-```
-
----
-
-## 🧪 Testing
-
-QEST ships with a Docker-based end-to-end test suite that provisions a real container for each supported distribution, runs the full `qest.sh` installer inside it, and then executes `tests/verify.sh` to validate that every tool, config file, and plugin was correctly set up.
-
-### Test Structure
-
-```
-tests/
-├── ubuntu.Dockerfile          # Ubuntu test environment
-├── fedora.Dockerfile          # Fedora test environment
-├── arch.Dockerfile            # Arch Linux test environment
-└── verify.sh                  # Post-install verification script
-test_docker.sh                 # Test orchestrator
-```
-
-`verify.sh` checks **58 items** across every category:
-
-| Category | Checks |
-|---|---|
-| Core native tools | `zsh`, `curl`, `git`, `fzf`, `jq`, `zoxide`, `bat`, `rg`, `fd` |
-| Zsh plugins | `fzf-tab`, `fast-syntax-highlighting` |
-| Config files | `~/.zshrc`, `~/.config/starship.toml` |
-| Shell & Env | `starship`, `atuin`, `direnv`, `chezmoi`, `age`, `nu` |
-| Editors & Multiplexers | `hx` (Helix), `zellij` |
-| Git & Workflow | `lazygit`, `just`, `moulti`, `gitleaks`, `delta` |
-| System Monitors | `btop`, `btm` (bottom), `viddy` |
-| Files & Navigation | `yazi`, `eza`, `broot`, `rclone`, `s5cmd` |
-| Text & Data | `lnav`, `yq`, `sd`, `jless`, `dasel`, `choose`, `vd`, `logdy` |
-| Disk Operations | `duf`, `procs`, `czkawka`, `dust`, `gdu`, `erd` (erdtree) |
-| Networking & Security | `gping`, `doggo`, `xh`, `bandwhich`, `termshark`, `atac` |
-| Utilities | `lazydocker`, `asciinema`, `tldr`, `navi`, `grex` |
-| Arch-only | `sysz` |
-
-### Running the Tests
-
-> **Requirements:** Docker must be installed and the daemon must be running.
-
-```bash
-# Run all three distros sequentially (recommended for CI)
-./test_docker.sh
-
-# Run all distros in parallel (faster, uses more CPU/memory)
-./test_docker.sh --parallel
-
-# Test a single distro
-./test_docker.sh ubuntu
-./test_docker.sh fedora
-./test_docker.sh arch
-
-# Force a clean build (no Docker layer cache)
-./test_docker.sh --no-cache
-
-# Combine flags freely
-./test_docker.sh ubuntu --no-cache
-```
-
-### Sample Output
-
-```
-╔══════════════════════════════════════════════════╗
-║      QEST  —  End-to-End Test Orchestrator       ║
-╚══════════════════════════════════════════════════╝
-
-  DISTRO      BUILD    RUN      PASSED    FAILED    SKIPPED    TIME
-  ──────────────────────────────────────────────────────────────────
-  ubuntu      ok       ok       58        0         1          19m 21s
-  fedora      ok       ok       58        0         1          22m 05s
-  arch        ok       ok       58        0         0          14m 42s
-  ──────────────────────────────────────────────────────────────────
-  TOTAL                         174       0         2          56m 08s
-
-  ╔══════════════════════════════════════╗
-  ║   ✔   ALL TESTS PASSED               ║
-  ╚══════════════════════════════════════╝
-```
-
-If any check fails, the orchestrator automatically tails the relevant container log inline so you never have to dig through files manually. The exit code is `0` on full pass and `1` on any failure, making it CI-friendly.
-
-> See [Known Issues](https://github.com/TinorNoah/QEST/issues?q=label%3A%22known+issue%22) for tracked limitations and workarounds.
-
----
-
-<div align="center">
-  <i>Empower your terminal. Drop the legacy baggage.</i>
-</div>
+- If `install.brainafk.in` fails temporarily:
+  - use direct fallback:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/TinorNoah/QEST/main/get.qest.sh | bash
+  ```
+- If `sudo` prompts fail:
+  ```bash
+  sudo -v
+  ```
+- For plain mode in constrained terminals:
+  ```bash
+  go run ./cmd/qest --no-gum
+  ```

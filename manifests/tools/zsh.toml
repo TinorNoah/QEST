@@ -1,0 +1,19 @@
+id = "zsh"
+category = "shell_env"
+tier = "core"
+validation_status = "validated"
+binary_names = ["zsh"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "zsh"
+debian = "zsh"
+fedora = "zsh"
+arch = "zsh"
+manjaro = "zsh"

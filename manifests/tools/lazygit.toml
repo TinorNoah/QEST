@@ -1,0 +1,17 @@
+id = "lazygit"
+category = "editor_workflow"
+tier = "core"
+validation_status = "validated"
+binary_names = ["lazygit"]
+
+[install_source]
+ubuntu = "brew"
+debian = "brew"
+fedora = "brew"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+arch = "lazygit"
+manjaro = "lazygit"
+brew = "lazygit"

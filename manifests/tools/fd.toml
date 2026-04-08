@@ -1,0 +1,19 @@
+id = "fd"
+category = "essentials"
+tier = "core"
+validation_status = "validated"
+binary_names = ["fd", "fdfind"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "fd-find"
+debian = "fd-find"
+fedora = "fd-find"
+arch = "fd"
+manjaro = "fd"

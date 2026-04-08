@@ -1,0 +1,19 @@
+id = "zoxide"
+category = "shell_env"
+tier = "core"
+validation_status = "validated"
+binary_names = ["zoxide"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "zoxide"
+debian = "zoxide"
+fedora = "zoxide"
+arch = "zoxide"
+manjaro = "zoxide"

@@ -1,0 +1,19 @@
+id = "ripgrep"
+category = "essentials"
+tier = "core"
+validation_status = "validated"
+binary_names = ["rg"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "ripgrep"
+debian = "ripgrep"
+fedora = "ripgrep"
+arch = "ripgrep"
+manjaro = "ripgrep"

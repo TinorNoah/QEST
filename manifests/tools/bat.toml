@@ -1,0 +1,19 @@
+id = "bat"
+category = "essentials"
+tier = "core"
+validation_status = "validated"
+binary_names = ["bat", "batcat"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "bat"
+debian = "bat"
+fedora = "bat"
+arch = "bat"
+manjaro = "bat"

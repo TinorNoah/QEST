@@ -1,0 +1,19 @@
+id = "btop"
+category = "essentials"
+tier = "core"
+validation_status = "validated"
+binary_names = ["btop"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "btop"
+debian = "btop"
+fedora = "btop"
+arch = "btop"
+manjaro = "btop"

@@ -1,0 +1,17 @@
+id = "starship"
+category = "shell_env"
+tier = "core"
+validation_status = "validated"
+binary_names = ["starship"]
+
+[install_source]
+ubuntu = "brew"
+debian = "brew"
+fedora = "brew"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+arch = "starship"
+manjaro = "starship"
+brew = "starship"

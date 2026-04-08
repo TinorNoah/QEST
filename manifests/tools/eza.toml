@@ -1,0 +1,17 @@
+id = "eza"
+category = "essentials"
+tier = "core"
+validation_status = "validated"
+binary_names = ["eza"]
+
+[install_source]
+ubuntu = "brew"
+debian = "brew"
+fedora = "brew"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+arch = "eza"
+manjaro = "eza"
+brew = "eza"

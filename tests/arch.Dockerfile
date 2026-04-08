@@ -5,7 +5,7 @@ FROM --platform=linux/amd64 archlinux:latest
 # Without this, pacman fails with "error restricting syscalls via seccomp: 22".
 RUN sed -i 's/^\[options\]/[options]\nDisableSandbox/' /etc/pacman.conf
 
-RUN pacman -Syu --noconfirm && pacman -S --noconfirm sudo curl git base-devel
+RUN pacman -Syu --noconfirm && pacman -S --noconfirm sudo curl git go base-devel
 
 # Create a non-root test user with passwordless sudo
 RUN useradd -m -s /bin/bash qestuser && \
@@ -17,5 +17,5 @@ WORKDIR /home/qestuser/quest
 # Copy the entire directory into the container
 COPY --chown=qestuser:qestuser . .
 
-# Emulate fresh install automatically bypassing interactive prompts, then verify system state
-CMD ["/bin/bash", "-c", "./qest.sh --yes --profile full && ./tests/verify.sh"]
+# Emulate fresh install using Go installer, then verify system state
+CMD ["/bin/bash", "-c", "go run ./cmd/qest --yes --no-gum && ./tests/verify.sh"]

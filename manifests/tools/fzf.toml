@@ -1,0 +1,19 @@
+id = "fzf"
+category = "shell_env"
+tier = "core"
+validation_status = "validated"
+binary_names = ["fzf"]
+
+[install_source]
+ubuntu = "native"
+debian = "native"
+fedora = "native"
+arch = "native"
+manjaro = "native"
+
+[package_name]
+ubuntu = "fzf"
+debian = "fzf"
+fedora = "fzf"
+arch = "fzf"
+manjaro = "fzf"
