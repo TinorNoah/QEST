@@ -120,6 +120,9 @@ main() {
   verify_checksum "$bin_path" "$sha_path"
 
   chmod +x "$bin_path"
+  if [[ -r /dev/tty ]]; then
+    exec "$bin_path" "$@" < /dev/tty
+  fi
   exec "$bin_path" "$@"
 }
 
