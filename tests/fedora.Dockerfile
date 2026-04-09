@@ -13,4 +13,4 @@ WORKDIR /home/qestuser/quest
 COPY --chown=qestuser:qestuser . .
 
 # Emulate fresh install using Go installer, then verify system state
-CMD ["/bin/bash", "-c", "go run ./cmd/qest --yes --no-gum && ./tests/verify.sh"]
+CMD ["/bin/bash", "-c", "go run ./cmd/qest --yes --no-gum && bash ./tests/verify.sh"]

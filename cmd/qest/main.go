@@ -839,6 +839,7 @@ func (i *installer) installNative(ctx context.Context, pkgs []string) error {
 }
 
 func (i *installer) ensureBrew(ctx context.Context) error {
+	i.addBrewToPath()
 	if _, err := exec.LookPath("brew"); err == nil {
 		return nil
 	}
@@ -850,7 +851,14 @@ func (i *installer) ensureBrew(ctx context.Context) error {
 	if err := i.runCommand(ctx, false, "curl", "-fsSL", "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh", "-o", tmp); err != nil {
 		return err
 	}
-	return i.runCommand(ctx, false, "bash", tmp)
+	if err := i.runCommand(ctx, false, "bash", tmp); err != nil {
+		return err
+	}
+	i.addBrewToPath()
+	if _, err := exec.LookPath("brew"); err != nil {
+		return fmt.Errorf("homebrew installed but brew is not on PATH: %w", err)
+	}
+	return nil
 }
 
 func (i *installer) installShellPlugins(ctx context.Context) error {
@@ -910,8 +918,13 @@ func (i *installer) applyConfig(ctx context.Context) error {
 }
 
 func (i *installer) setDefaultShell(ctx context.Context) error {
-	if i.cfg.yes {
-		// yes mode enables this by default
+	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
+		i.logger("skip default shell change in non-interactive environment")
+		return nil
+	}
+	if os.Getenv("CI") != "" || isContainerEnvironment() {
+		i.logger("skip default shell change in CI/container environment")
+		return nil
 	}
 	zshPath, err := exec.LookPath("zsh")
 	if err != nil {
@@ -1145,6 +1158,38 @@ func (w *lineWriter) Write(p []byte) (int, error) {
 		_ = w.buf.WriteByte(b)
 	}
 	return len(p), nil
+}
+
+func (i *installer) addBrewToPath() {
+	paths := []string{
+		"/home/linuxbrew/.linuxbrew/bin",
+		"/home/linuxbrew/.linuxbrew/sbin",
+	}
+	current := os.Getenv("PATH")
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil && !strings.Contains(current, p) {
+			current = p + ":" + current
+		}
+	}
+	_ = os.Setenv("PATH", current)
+}
+
+func isContainerEnvironment() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+	if _, err := os.Stat("/run/.containerenv"); err == nil {
+		return true
+	}
+	data, err := os.ReadFile("/proc/1/cgroup")
+	if err != nil {
+		return false
+	}
+	content := strings.ToLower(string(data))
+	return strings.Contains(content, "docker") ||
+		strings.Contains(content, "containerd") ||
+		strings.Contains(content, "kubepods") ||
+		strings.Contains(content, "libpod")
 }
 
 func buildSummaryLines(err error) []string {

@@ -94,7 +94,7 @@ check_cmd "jq" jq
 check_cmd "btop" btop
 check_cmd "eza" eza
 check_cmd "git-delta" delta
-check_cmd "helix" hx
+check_cmd "helix" hx helix
 check_cmd "zellij" zellij
 check_cmd "lazygit" lazygit
 
