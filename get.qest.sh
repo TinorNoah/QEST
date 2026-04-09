@@ -14,9 +14,15 @@ require_command() {
   fi
 }
 
-detect_linux_distro() {
-  if [[ "$(uname -s)" != "Linux" ]]; then
-    echo "QEST bootstrap currently supports Linux only."
+detect_platform() {
+  local uname_s
+  uname_s="$(uname -s)"
+  if [[ "$uname_s" == "Darwin" ]]; then
+    echo "darwin"
+    return 0
+  fi
+  if [[ "$uname_s" != "Linux" ]]; then
+    echo "Unsupported OS: $uname_s"
     exit 1
   fi
   if [[ ! -f /etc/os-release ]]; then
@@ -29,9 +35,11 @@ detect_linux_distro() {
   local os_like="${ID_LIKE:-}"
 
   if [[ "$os_id" == "ubuntu" || "$os_id" == "debian" || "$os_id" == "fedora" || "$os_id" == "arch" || "$os_id" == "manjaro" ]]; then
+    echo "linux"
     return 0
   fi
   if [[ "$os_like" == *"ubuntu"* || "$os_like" == *"debian"* || "$os_like" == *"fedora"* || "$os_like" == *"arch"* ]]; then
+    echo "linux"
     return 0
   fi
   echo "Unsupported Linux distro: $os_id ($os_like)."
@@ -94,11 +102,12 @@ main() {
   require_command curl
   check_sudo
   check_internet
-  detect_linux_distro
+  local platform
+  platform="$(detect_platform)"
 
   local arch asset_name base_url bin_path sha_path
   arch="$(detect_arch)"
-  asset_name="qest-linux-${arch}"
+  asset_name="qest-${platform}-${arch}"
   base_url="${QEST_RELEASE_BASE_URL:-https://github.com/TinorNoah/QEST/releases/latest/download}"
   bin_path="$TMP_DIR/$asset_name"
   sha_path="$TMP_DIR/${asset_name}.sha256"

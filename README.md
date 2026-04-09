@@ -1,7 +1,7 @@
 <div align="center">
   <h1>QEST</h1>
   <p><strong>Quite Effective Setup Tool</strong></p>
-  <p>Single-command Linux bootstrap with a full interactive terminal wizard.</p>
+  <p>Single-command shell bootstrap with a full interactive terminal wizard.</p>
 </div>
 
 <br>
@@ -10,7 +10,7 @@
 
 ## What QEST is
 
-QEST installs a modern shell environment on fresh Linux machines with one command:
+QEST installs a modern shell environment on fresh Linux and macOS machines with one command:
 
 ```bash
 curl -fsSL https://install.brainafk.in | bash
@@ -40,7 +40,7 @@ The bootstrap script stays tiny, downloads a prebuilt `qest` binary, verifies ch
 
 When you run `curl -fsSL https://install.brainafk.in | bash`, QEST does this in order:
 
-1. bootstrap checks Linux distro, CPU architecture, `curl`, `sudo`, internet, and checksum tools
+1. bootstrap checks supported OS, CPU architecture, `curl`, `sudo`, internet, and checksum tools
 2. bootstrap downloads release binary + `.sha256`, verifies checksum, then starts `qest`
 3. `qest` loads tool manifests from `manifests/tools` and runs wizard/interactive selection
 4. installer executes phases with per-phase status, then prints success/failure summary
@@ -49,7 +49,7 @@ For local development runs, execute from the repo root so `manifests/tools` is d
 
 ## Current support
 
-- **OS**: Ubuntu/Debian, Fedora, Arch/Manjaro
+- **OS**: Ubuntu/Debian, Fedora, Arch/Manjaro, macOS
 - **CPU**: amd64, arm64
 - **Modes**:
   - Interactive TTY -> full-screen wizard
@@ -98,13 +98,17 @@ go run ./cmd/qest --dry-run --yes --no-gum
   - `go build` and `go test`
   - Docker matrix smoke checks
 - Tagged release: [`.github/workflows/release.yml`](./.github/workflows/release.yml)
-  - static binaries (`CGO_ENABLED=0`) for linux/amd64 and linux/arm64
+  - static binaries (`CGO_ENABLED=0`) for linux/darwin amd64 and arm64
   - checksum files
   - release assets:
     - `qest-linux-amd64`
     - `qest-linux-amd64.sha256`
     - `qest-linux-arm64`
     - `qest-linux-arm64.sha256`
+    - `qest-darwin-amd64`
+    - `qest-darwin-amd64.sha256`
+    - `qest-darwin-arm64`
+    - `qest-darwin-arm64.sha256`
 
 ## Implementation status
 

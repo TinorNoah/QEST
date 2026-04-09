@@ -145,8 +145,12 @@ func detectSystem() (systemInfo, error) {
 		arch: runtime.GOARCH,
 		home: os.Getenv("HOME"),
 	}
+	if runtime.GOOS == "darwin" {
+		sys.osID = "macos"
+		return sys, nil
+	}
 	if runtime.GOOS != "linux" {
-		return sys, fmt.Errorf("unsupported OS %q: qest currently supports Ubuntu/Fedora/Arch Linux", runtime.GOOS)
+		return sys, fmt.Errorf("unsupported OS %q: qest currently supports Ubuntu/Fedora/Arch Linux and macOS", runtime.GOOS)
 	}
 	data, err := os.ReadFile("/etc/os-release")
 	if err != nil {
@@ -796,7 +800,15 @@ func (i *installer) installTools(ctx context.Context) error {
 				nativePkgs = append(nativePkgs, pkg)
 			}
 		case "brew":
-			if pkg := packageForOS(t, "brew"); pkg != "" {
+			pkg := packageForOS(t, "brew")
+			if i.sys.osID == "macos" {
+				if macPkg := packageForOS(t, "macos"); macPkg != "" {
+					pkg = macPkg
+				} else if pkg == "" {
+					pkg = t.ID
+				}
+			}
+			if pkg != "" {
 				brewPkgs = append(brewPkgs, pkg)
 			}
 		default:
@@ -965,6 +977,9 @@ func (i *installer) runCommand(ctx context.Context, useSudo bool, name string, a
 func sourceForOS(t toolManifest, osID string) string {
 	if v := t.InstallSource[osID]; v != "" {
 		return v
+	}
+	if osID == "macos" {
+		return "brew"
 	}
 	if strings.Contains(osID, "debian") && t.InstallSource["ubuntu"] != "" {
 		return t.InstallSource["ubuntu"]
@@ -1182,6 +1197,10 @@ func (w *lineWriter) Write(p []byte) (int, error) {
 
 func (i *installer) addBrewToPath() {
 	paths := []string{
+		"/opt/homebrew/bin",
+		"/opt/homebrew/sbin",
+		"/usr/local/bin",
+		"/usr/local/sbin",
 		"/home/linuxbrew/.linuxbrew/bin",
 		"/home/linuxbrew/.linuxbrew/sbin",
 	}

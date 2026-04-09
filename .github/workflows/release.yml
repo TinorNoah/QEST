@@ -29,11 +29,21 @@ jobs:
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o dist/qest-linux-arm64 ./cmd/qest
 
+      - name: Build darwin/amd64 binary
+        run: |
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o dist/qest-darwin-amd64 ./cmd/qest
+
+      - name: Build darwin/arm64 binary
+        run: |
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o dist/qest-darwin-arm64 ./cmd/qest
+
       - name: Generate checksums
         run: |
           cd dist
           sha256sum qest-linux-amd64 > qest-linux-amd64.sha256
           sha256sum qest-linux-arm64 > qest-linux-arm64.sha256
+          sha256sum qest-darwin-amd64 > qest-darwin-amd64.sha256
+          sha256sum qest-darwin-arm64 > qest-darwin-arm64.sha256
 
       - name: Publish release assets
         uses: softprops/action-gh-release@v2
@@ -43,3 +53,7 @@ jobs:
             dist/qest-linux-amd64.sha256
             dist/qest-linux-arm64
             dist/qest-linux-arm64.sha256
+            dist/qest-darwin-amd64
+            dist/qest-darwin-amd64.sha256
+            dist/qest-darwin-arm64
+            dist/qest-darwin-arm64.sha256
