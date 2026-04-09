@@ -223,7 +223,6 @@ W_RUN=7
 W_PASS=8
 W_FAIL=8
 W_SKIP=9
-W_TIME=10
 
 # Table header row
 echo ""
@@ -234,7 +233,7 @@ pad_right "${C_BOLD}RUN${C_RESET}"      $W_RUN;    printf "  "
 pad_right "${C_BOLD}PASSED${C_RESET}"   $W_PASS;   printf "  "
 pad_right "${C_BOLD}FAILED${C_RESET}"   $W_FAIL;   printf "  "
 pad_right "${C_BOLD}SKIPPED${C_RESET}"  $W_SKIP;   printf "  "
-printf "${C_BOLD}TIME${C_RESET}\n"
+printf '%b\n' "${C_BOLD}TIME${C_RESET}"
 
 DIVIDER="  $(printf '─%.0s' {1..74})"
 echo -e "$DIVIDER"
@@ -321,7 +320,7 @@ else
 fi
 printf "  "
 pad_right "${C_BOLD}${C_YELLOW}${TOTAL_SKIPPED}${C_RESET}" $W_SKIP; printf "  "
-printf "${C_BOLD}%s${C_RESET}\n" "$(elapsed_fmt "$WALL_ELAPSED")"
+printf '%b%s%b\n' "$C_BOLD" "$(elapsed_fmt "$WALL_ELAPSED")" "$C_RESET"
 
 # ── Failure details ───────────────────────────────────────────────────────────
 # For any distro that failed, tail the relevant log so the cause is visible

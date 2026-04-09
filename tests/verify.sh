@@ -7,7 +7,6 @@ SKIP=0
 
 pass() { echo "  ✔ $1"; PASS=$((PASS + 1)); }
 fail() { echo "  ✘ $1"; FAIL=$((FAIL + 1)); }
-skip() { echo "  ⊘ $1"; SKIP=$((SKIP + 1)); }
 
 has_cmd() { command -v "$1" >/dev/null 2>&1 || [ -x "/home/linuxbrew/.linuxbrew/bin/$1" ]; }
 
