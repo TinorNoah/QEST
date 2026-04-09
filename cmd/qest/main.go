@@ -57,6 +57,7 @@ type toolManifest struct {
 type selection struct {
 	profile      string
 	categories   map[string]bool
+	tools        map[string]bool
 	dotfilesMode string
 	dotfilesRepo string
 }
@@ -191,7 +192,7 @@ func isSupportedLinux(sys systemInfo) bool {
 	return false
 }
 
-func chooseSelection(cfg appConfig, _ systemInfo, _ []toolManifest) (selection, error) {
+func chooseSelection(cfg appConfig, sys systemInfo, tools []toolManifest) (selection, error) {
 	if cfg.yes {
 		return selection{
 			profile:      "full",
@@ -204,7 +205,7 @@ func chooseSelection(cfg appConfig, _ systemInfo, _ []toolManifest) (selection, 
 		return choosePlainSelection()
 	}
 
-	return chooseInteractiveSelection()
+	return chooseInteractiveSelection(sys, tools)
 }
 
 func isInteractive(cfg appConfig) bool {
@@ -321,26 +322,32 @@ const (
 	stepWelcome wizardState = iota
 	stepProfile
 	stepCustom
+	stepTools
 	stepDotfiles
 	stepDotfilesRepo
 	stepConfirm
 )
 
 type wizardModel struct {
-	step          wizardState
-	profileList   list.Model
-	dotfilesList  list.Model
-	categoryIdx   int
-	categorySet   map[string]bool
-	dotfilesRepo  string
-	selections    selection
-	ready         bool
-	width         int
-	height        int
-	colorDisabled bool
+	step           wizardState
+	profileList    list.Model
+	dotfilesList   list.Model
+	categoryIdx    int
+	categorySet    map[string]bool
+	dotfilesRepo   string
+	toolCandidates []toolManifest
+	toolIdx        int
+	toolSet        map[string]bool
+	tools          []toolManifest
+	system         systemInfo
+	selections     selection
+	ready          bool
+	width          int
+	height         int
+	colorDisabled  bool
 }
 
-func chooseInteractiveSelection() (selection, error) {
+func chooseInteractiveSelection(sys systemInfo, tools []toolManifest) (selection, error) {
 	profileItems := []list.Item{
 		menuItem{title: "Full", desc: "Validated default set (v0.1)", value: "full"},
 		menuItem{title: "Shell Only", desc: "Shell stack only", value: "shell"},
@@ -368,6 +375,9 @@ func chooseInteractiveSelection() (selection, error) {
 		profileList:  pList,
 		dotfilesList: dList,
 		categorySet:  map[string]bool{},
+		toolSet:      map[string]bool{},
+		tools:        tools,
+		system:       sys,
 		selections: selection{
 			profile:      "full",
 			categories:   defaultCategories(),
@@ -433,6 +443,9 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if selected.value == "custom" {
 					m.step = stepCustom
 					m.categorySet = map[string]bool{}
+					m.toolCandidates = nil
+					m.toolSet = map[string]bool{}
+					m.toolIdx = 0
 				} else {
 					m.selections.categories = profileCategories(selected.value)
 					m.step = stepDotfiles
@@ -461,9 +474,39 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.categorySet["essentials"] = true
 				}
 				m.selections.categories = m.categorySet
-				m.step = stepDotfiles
+				m.toolCandidates = toolsForCategories(m.tools, m.categorySet, m.system.osID)
+				m.toolSet = map[string]bool{}
+				m.toolIdx = 0
+				m.step = stepTools
 			case "esc":
 				m.step = stepProfile
+			}
+		}
+		return m, nil
+	case stepTools:
+		if k, ok := msg.(tea.KeyMsg); ok {
+			switch k.String() {
+			case "up":
+				if m.toolIdx > 0 {
+					m.toolIdx--
+				}
+			case "down":
+				if m.toolIdx < len(m.toolCandidates)-1 {
+					m.toolIdx++
+				}
+			case " ":
+				if len(m.toolCandidates) > 0 {
+					id := m.toolCandidates[m.toolIdx].ID
+					m.toolSet[id] = !m.toolSet[id]
+				}
+			case "enter":
+				if len(m.toolSet) == 0 && len(m.toolCandidates) > 0 {
+					m.toolSet[m.toolCandidates[m.toolIdx].ID] = true
+				}
+				m.selections.tools = m.toolSet
+				m.step = stepDotfiles
+			case "esc":
+				m.step = stepCustom
 			}
 		}
 		return m, nil
@@ -473,7 +516,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if k, ok := msg.(tea.KeyMsg); ok {
 			if k.String() == "esc" {
 				if m.selections.profile == "custom" {
-					m.step = stepCustom
+					m.step = stepTools
 				} else {
 					m.step = stepProfile
 				}
@@ -570,6 +613,28 @@ func (m wizardModel) View() string {
 			body.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, mark, categoryLabel(cat)))
 		}
 		hint = "Arrows: move | Space: toggle | Enter: continue | Esc: back"
+	case stepTools:
+		body.WriteString("Custom tools (space to toggle, enter to continue):\n\n")
+		if len(m.toolCandidates) == 0 {
+			body.WriteString("No supported tools found for selected categories on this OS.\n")
+		}
+		for i, tool := range m.toolCandidates {
+			cursor := " "
+			if i == m.toolIdx {
+				cursor = ">"
+			}
+			mark := " "
+			if m.toolSet[tool.ID] {
+				mark = "x"
+			}
+			body.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, mark, tool.ID))
+		}
+		if len(m.toolCandidates) > 0 && m.toolIdx < len(m.toolCandidates) {
+			current := m.toolCandidates[m.toolIdx]
+			body.WriteString("\nTool details:\n")
+			body.WriteString(fmt.Sprintf("- %s\n", toolDetail(current, m.system.osID)))
+		}
+		hint = "Arrows: move | Space: toggle | Enter: continue | Esc: back"
 	case stepDotfiles:
 		body.WriteString(m.dotfilesList.View())
 		hint = "Arrows: move | Enter: select | Esc: back"
@@ -582,6 +647,16 @@ func (m wizardModel) View() string {
 		body.WriteString(fmt.Sprintf("- Profile: %s\n", m.selections.profile))
 		cats := selectedCategoryLabels(m.selections.categories)
 		body.WriteString(fmt.Sprintf("- Categories: %s\n", strings.Join(cats, ", ")))
+		if len(m.selections.tools) > 0 {
+			tools := make([]string, 0, len(m.selections.tools))
+			for id, enabled := range m.selections.tools {
+				if enabled {
+					tools = append(tools, id)
+				}
+			}
+			sort.Strings(tools)
+			body.WriteString(fmt.Sprintf("- Tools: %s\n", strings.Join(tools, ", ")))
+		}
 		body.WriteString(fmt.Sprintf("- Dotfiles: %s\n", m.selections.dotfilesMode))
 		if m.selections.dotfilesRepo != "" {
 			body.WriteString(fmt.Sprintf("- Dotfiles repo: %s\n", m.selections.dotfilesRepo))
@@ -1007,6 +1082,12 @@ func selectTools(all []toolManifest, sel selection) []toolManifest {
 				out = append(out, t)
 			}
 		case "custom":
+			if len(sel.tools) > 0 {
+				if sel.tools[t.ID] {
+					out = append(out, t)
+				}
+				continue
+			}
 			if sel.categories[t.Category] {
 				out = append(out, t)
 			}
@@ -1015,6 +1096,40 @@ func selectTools(all []toolManifest, sel selection) []toolManifest {
 		}
 	}
 	return out
+}
+
+func toolsForCategories(all []toolManifest, categories map[string]bool, osID string) []toolManifest {
+	candidates := make([]toolManifest, 0, len(all))
+	for _, t := range all {
+		if t.ValidationStatus != "validated" {
+			continue
+		}
+		if !categories[t.Category] {
+			continue
+		}
+		if sourceForOS(t, osID) == "unsupported" {
+			continue
+		}
+		candidates = append(candidates, t)
+	}
+	sort.Slice(candidates, func(i, j int) bool { return candidates[i].ID < candidates[j].ID })
+	return candidates
+}
+
+func toolDetail(t toolManifest, osID string) string {
+	source := sourceForOS(t, osID)
+	pkg := packageForOS(t, osID)
+	if pkg == "" {
+		pkg = packageForOS(t, "brew")
+	}
+	if pkg == "" {
+		pkg = t.ID
+	}
+	desc := fmt.Sprintf("%s | %s | %s", categoryLabel(t.Category), source, pkg)
+	if strings.TrimSpace(t.Notes) != "" {
+		return desc + " | " + t.Notes
+	}
+	return desc
 }
 
 func defaultCategories() map[string]bool {
