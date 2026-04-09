@@ -36,6 +36,17 @@ The bootstrap script stays tiny, downloads a prebuilt `qest` binary, verifies ch
    - Serves the latest bootstrap script from GitHub.
    - Returns actionable fallback command if upstream fetch fails.
 
+## First run expectations
+
+When you run `curl -fsSL https://install.brainafk.in | bash`, QEST does this in order:
+
+1. bootstrap checks Linux distro, CPU architecture, `curl`, `sudo`, internet, and checksum tools
+2. bootstrap downloads release binary + `.sha256`, verifies checksum, then starts `qest`
+3. `qest` loads tool manifests from `manifests/tools` and runs wizard/interactive selection
+4. installer executes phases with per-phase status, then prints success/failure summary
+
+For local development runs, execute from the repo root so `manifests/tools` is discoverable.
+
 ## Current support
 
 - **OS**: Ubuntu/Debian, Fedora, Arch/Manjaro
@@ -95,24 +106,31 @@ go run ./cmd/qest --dry-run --yes --no-gum
     - `qest-linux-arm64`
     - `qest-linux-arm64.sha256`
 
-## What has been done
+## Implementation status
 
-- Cloudflare worker route set to `install.brainafk.in`.
-- Bootstrap switched from git clone flow to binary+checksum flow.
-- Go installer foundation implemented with:
-  - wizard selection model
-  - plain fallback mode
-  - phase execution
-  - per-tool TOML manifest loading
-- v0.1 tool manifests created under [`manifests/tools/`](./manifests/tools).
+| Area | Status | Notes |
+| --- | --- | --- |
+| Bootstrap downloader + checksum verify | Implemented | [`get.qest.sh`](./get.qest.sh) |
+| Cloudflare bootstrap route + fallback messaging | Implemented | `install.brainafk.in` worker path |
+| Full-screen wizard + plain fallback + `--yes` | Implemented | [`cmd/qest/main.go`](./cmd/qest/main.go) |
+| Phase-based installer with per-phase failure isolation | Implemented | tools, shell plugins, config, default shell |
+| TOML tool catalog (one file per tool) | Implemented | [`manifests/tools/`](./manifests/tools) |
+| Manifest validation gate in CI | Implemented | `go run ./cmd/qest --validate-manifests` |
+| v0.1 verification gate in Docker matrix | Implemented | [`tests/verify.sh`](./tests/verify.sh), [`test_docker.sh`](./test_docker.sh) |
+| v0.2 extended optional tool batch rollout | Planned | see [`ROADMAP.md`](./ROADMAP.md) |
+| v0.3 advanced/experimental staged rollout | Planned | see [`ROADMAP.md`](./ROADMAP.md) |
+
+## v0.1 release checklist
+
+- bootstrap + worker serve latest script and fallback command
+- release pipeline publishes linux amd64/arm64 binaries + checksum files
+- manifests pass structural validation in CI
+- `tests/verify.sh` passes on Ubuntu, Fedora, and Arch Docker containers
+- docs and tracker issue are updated for release state
 
 ## Planned next (v0.x roadmap)
 
-See full plan in [`ROADMAP.md`](./ROADMAP.md). High-level batches:
-
-- `v0.1`: validated default set (current target)
-- `v0.2`: extended opt-in set after cross-OS validation
-- `v0.3`: advanced/experimental set with staged promotion
+See full plan in [`ROADMAP.md`](./ROADMAP.md) for concrete `v0.1`, `v0.2`, `v0.3` tool batches and promotion gates.
 
 Track progress:
 

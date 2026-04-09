@@ -1,4 +1,4 @@
-FROM fedora:latest
+FROM fedora:41
 
 RUN dnf install -y sudo curl git golang @development-tools
 

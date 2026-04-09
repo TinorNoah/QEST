@@ -28,9 +28,10 @@ import (
 )
 
 type appConfig struct {
-	dryRun bool
-	yes    bool
-	noGum  bool
+	dryRun            bool
+	yes               bool
+	noGum             bool
+	validateManifests bool
 }
 
 type systemInfo struct {
@@ -72,8 +73,19 @@ type installer struct {
 	logger    func(string)
 }
 
+var errUserCancelled = errors.New("installer cancelled")
+
 func main() {
 	cfg := parseFlags()
+
+	if cfg.validateManifests {
+		tools, err := loadToolManifests("manifests/tools")
+		if err != nil {
+			fatalf("failed to load tool manifests: %v", err)
+		}
+		fmt.Printf("validated %d tool manifests\n", len(tools))
+		return
+	}
 
 	sys, err := detectSystem()
 	if err != nil {
@@ -84,9 +96,12 @@ func main() {
 	if err != nil {
 		fatalf("failed to load tool manifests: %v", err)
 	}
-
 	sel, err := chooseSelection(cfg, sys, tools)
 	if err != nil {
+		if errors.Is(err, errUserCancelled) {
+			fmt.Println("qest: installer cancelled")
+			return
+		}
 		fatalf("%v", err)
 	}
 
@@ -118,6 +133,7 @@ func parseFlags() appConfig {
 	flag.BoolVar(&cfg.yes, "yes", false, "Non-interactive mode")
 	flag.BoolVar(&cfg.yes, "y", false, "Non-interactive mode")
 	flag.BoolVar(&cfg.noGum, "no-gum", false, "Disable full-screen TUI mode")
+	flag.BoolVar(&cfg.validateManifests, "validate-manifests", false, "Validate TOML manifests and exit")
 	flag.Parse()
 	return cfg
 }
@@ -214,8 +230,8 @@ func choosePlainSelection() (selection, error) {
 	case "4":
 		sel.profile = "custom"
 		sel.categories = map[string]bool{}
-		for _, cat := range []string{"shell_env", "essentials", "editor_workflow", "network_tools", "utilities"} {
-			fmt.Printf("Include %s? [y/N]: ", cat)
+		for _, cat := range categoryOptions() {
+			fmt.Printf("Include %s? [y/N]: ", categoryLabel(cat))
 			line, _ := reader.ReadString('\n')
 			if strings.EqualFold(strings.TrimSpace(line), "y") {
 				sel.categories[cat] = true
@@ -241,7 +257,46 @@ func choosePlainSelection() (selection, error) {
 	case "3":
 		sel.dotfilesMode = "skip"
 	}
+	fmt.Println("")
+	fmt.Printf("Install now with profile '%s'? [y/N]: ", sel.profile)
+	raw, _ = reader.ReadString('\n')
+	confirmed := strings.EqualFold(strings.TrimSpace(raw), "y")
+	if !confirmed {
+		return selection{}, errUserCancelled
+	}
 	return sel, nil
+}
+
+func categoryOptions() []string {
+	return []string{"shell_env", "essentials", "editor_workflow", "network_tools", "utilities"}
+}
+
+func categoryLabel(category string) string {
+	switch category {
+	case "shell_env":
+		return "Shell and env"
+	case "essentials":
+		return "Essentials"
+	case "editor_workflow":
+		return "Editor and workflow"
+	case "network_tools":
+		return "Network tools"
+	case "utilities":
+		return "Utilities"
+	default:
+		return category
+	}
+}
+
+func selectedCategoryLabels(set map[string]bool) []string {
+	labels := make([]string, 0, len(set))
+	for category, enabled := range set {
+		if enabled {
+			labels = append(labels, categoryLabel(category))
+		}
+	}
+	sort.Strings(labels)
+	return labels
 }
 
 type menuItem struct {
@@ -324,6 +379,9 @@ func chooseInteractiveSelection() (selection, error) {
 	if !ok {
 		return selection{}, errors.New("unexpected wizard result type")
 	}
+	if !wm.ready {
+		return selection{}, errUserCancelled
+	}
 	return wm.selections, nil
 }
 
@@ -333,8 +391,19 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.profileList.SetSize(msg.Width-8, 12)
-		m.dotfilesList.SetSize(msg.Width-8, 12)
+		listWidth := msg.Width - 8
+		if listWidth < 40 {
+			listWidth = 40
+		}
+		listHeight := msg.Height - 11
+		if listHeight < 8 {
+			listHeight = 8
+		}
+		if listHeight > 18 {
+			listHeight = 18
+		}
+		m.profileList.SetSize(listWidth, listHeight)
+		m.dotfilesList.SetSize(listWidth, listHeight)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -367,7 +436,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, cmd
 	case stepCustom:
-		categories := []string{"shell_env", "essentials", "editor_workflow", "network_tools", "utilities"}
+		categories := categoryOptions()
 		if k, ok := msg.(tea.KeyMsg); ok {
 			switch k.String() {
 			case "up":
@@ -387,22 +456,34 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.selections.categories = m.categorySet
 				m.step = stepDotfiles
+			case "esc":
+				m.step = stepProfile
 			}
 		}
 		return m, nil
 	case stepDotfiles:
 		var cmd tea.Cmd
 		m.dotfilesList, cmd = m.dotfilesList.Update(msg)
-		if k, ok := msg.(tea.KeyMsg); ok && k.String() == "enter" {
-			if selected, ok := m.dotfilesList.SelectedItem().(menuItem); ok {
-				m.selections.dotfilesMode = selected.value
-				if selected.value == "custom" {
-					m.step = stepDotfilesRepo
+		if k, ok := msg.(tea.KeyMsg); ok {
+			if k.String() == "esc" {
+				if m.selections.profile == "custom" {
+					m.step = stepCustom
 				} else {
-					m.step = stepConfirm
+					m.step = stepProfile
 				}
+				return m, nil
 			}
-			return m, nil
+			if k.String() == "enter" {
+				if selected, ok := m.dotfilesList.SelectedItem().(menuItem); ok {
+					m.selections.dotfilesMode = selected.value
+					if selected.value == "custom" {
+						m.step = stepDotfilesRepo
+					} else {
+						m.step = stepConfirm
+					}
+				}
+				return m, nil
+			}
 		}
 		return m, cmd
 	case stepDotfilesRepo:
@@ -419,6 +500,8 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(m.dotfilesRepo) > 0 {
 					m.dotfilesRepo = m.dotfilesRepo[:len(m.dotfilesRepo)-1]
 				}
+			case "esc":
+				m.step = stepDotfiles
 			default:
 				if len(k.String()) == 1 {
 					m.dotfilesRepo += k.String()
@@ -429,11 +512,18 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case stepConfirm:
 		if k, ok := msg.(tea.KeyMsg); ok {
 			switch k.String() {
-			case "enter":
+			case "enter", "y":
 				m.ready = true
 				return m, tea.Quit
-			case "esc":
-				m.step = stepProfile
+			case "b", "esc":
+				if m.selections.dotfilesMode == "custom" {
+					m.step = stepDotfilesRepo
+				} else {
+					m.step = stepDotfiles
+				}
+			case "n", "q":
+				m.ready = false
+				return m, tea.Quit
 			}
 		}
 	}
@@ -441,7 +531,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m wizardModel) View() string {
-	render := lipgloss.NewStyle().Padding(1, 2)
+	render := lipgloss.NewStyle().Padding(1, 2).Border(lipgloss.RoundedBorder())
 	if m.colorDisabled {
 		render = render.UnsetForeground().UnsetBackground()
 	}
@@ -449,15 +539,18 @@ func (m wizardModel) View() string {
 
 	var body strings.Builder
 	body.WriteString(title + "\n\n")
+	hint := ""
 
 	switch m.step {
 	case stepWelcome:
 		body.WriteString("Welcome to QEST.\n")
 		body.WriteString("Press Enter to start setup.\n")
+		hint = "Enter: continue | Ctrl+C: quit"
 	case stepProfile:
 		body.WriteString(m.profileList.View())
+		hint = "Arrows: move | Enter: select | Ctrl+C: quit"
 	case stepCustom:
-		categories := []string{"shell_env", "essentials", "editor_workflow", "network_tools", "utilities"}
+		categories := categoryOptions()
 		body.WriteString("Custom categories (space to toggle, enter to continue):\n\n")
 		for i, cat := range categories {
 			cursor := " "
@@ -468,32 +561,38 @@ func (m wizardModel) View() string {
 			if m.categorySet[cat] {
 				mark = "x"
 			}
-			body.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, mark, cat))
+			body.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, mark, categoryLabel(cat)))
 		}
+		hint = "Arrows: move | Space: toggle | Enter: continue | Esc: back"
 	case stepDotfiles:
 		body.WriteString(m.dotfilesList.View())
+		hint = "Arrows: move | Enter: select | Esc: back"
 	case stepDotfilesRepo:
 		body.WriteString("Enter GitHub dotfiles repo URL and press Enter:\n\n")
 		body.WriteString(m.dotfilesRepo)
+		hint = "Type URL | Enter: continue | Esc: back"
 	case stepConfirm:
 		body.WriteString("Review before install:\n\n")
 		body.WriteString(fmt.Sprintf("- Profile: %s\n", m.selections.profile))
-		cats := make([]string, 0, len(m.selections.categories))
-		for cat, enabled := range m.selections.categories {
-			if enabled {
-				cats = append(cats, cat)
-			}
-		}
-		sort.Strings(cats)
+		cats := selectedCategoryLabels(m.selections.categories)
 		body.WriteString(fmt.Sprintf("- Categories: %s\n", strings.Join(cats, ", ")))
 		body.WriteString(fmt.Sprintf("- Dotfiles: %s\n", m.selections.dotfilesMode))
 		if m.selections.dotfilesRepo != "" {
 			body.WriteString(fmt.Sprintf("- Dotfiles repo: %s\n", m.selections.dotfilesRepo))
 		}
-		body.WriteString("\nPress Enter to install, Esc to change profile.\n")
+		body.WriteString("\nReady to install.\n")
+		hint = "Enter/Y: install | B/Esc: back | N/Q: cancel"
 	}
 
-	return render.Render(body.String())
+	if hint != "" {
+		body.WriteString("\n" + hint + "\n")
+	}
+
+	content := render.Render(body.String())
+	if m.width > 0 && m.height > 0 {
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+	}
+	return content
 }
 
 func runInteractiveInstaller(inst installer) error {
@@ -520,10 +619,12 @@ func runInteractiveInstaller(inst installer) error {
 }
 
 type progressState struct {
-	spinner spinner.Model
-	logs    []string
-	done    bool
-	err     error
+	spinner         spinner.Model
+	logs            []string
+	done            bool
+	err             error
+	summary         []string
+	awaitingDismiss bool
 }
 
 type progressModel struct {
@@ -533,9 +634,10 @@ type progressModel struct {
 }
 
 type progressEventMsg struct {
-	line string
-	done bool
-	err  error
+	line    string
+	done    bool
+	err     error
+	summary []string
 }
 
 func waitForProgress(events <-chan progressEventMsg) tea.Cmd {
@@ -555,7 +657,7 @@ func (m progressModel) Init() tea.Cmd {
 			err := m.run(func(line string) {
 				m.events <- progressEventMsg{line: line}
 			})
-			m.events <- progressEventMsg{done: true, err: err}
+			m.events <- progressEventMsg{done: true, err: err, summary: buildSummaryLines(err)}
 			close(m.events)
 		}()
 	}
@@ -568,7 +670,16 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
+		if m.model.done {
+			switch msg.String() {
+			case "enter", "q", "esc":
+				return m, tea.Quit
+			}
+		}
 	case spinner.TickMsg:
+		if m.model.done {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.model.spinner, cmd = m.model.spinner.Update(msg)
 		return m, cmd
@@ -579,7 +690,9 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.done {
 			m.model.done = true
 			m.model.err = msg.err
-			return m, tea.Quit
+			m.model.summary = msg.summary
+			m.model.awaitingDismiss = true
+			return m, nil
 		}
 		return m, waitForProgress(m.events)
 	}
@@ -588,7 +701,15 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m progressModel) View() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s Installing...\n\n", m.model.spinner.View()))
+	if m.model.done {
+		if m.model.err != nil {
+			b.WriteString("Install completed with failures.\n\n")
+		} else {
+			b.WriteString("Install completed successfully.\n\n")
+		}
+	} else {
+		b.WriteString(fmt.Sprintf("%s Installing...\n\n", m.model.spinner.View()))
+	}
 	start := 0
 	if len(m.model.logs) > 20 {
 		start = len(m.model.logs) - 20
@@ -596,8 +717,16 @@ func (m progressModel) View() string {
 	for _, line := range m.model.logs[start:] {
 		b.WriteString(line + "\n")
 	}
-	if m.model.done && m.model.err != nil {
-		b.WriteString("\nInstall finished with failures.")
+	if m.model.done {
+		if len(m.model.summary) > 0 {
+			b.WriteString("\nSummary:\n")
+			for _, line := range m.model.summary {
+				b.WriteString("- " + line + "\n")
+			}
+		}
+		if m.model.awaitingDismiss {
+			b.WriteString("\nPress Enter to exit.\n")
+		}
 	}
 	return b.String()
 }
@@ -892,16 +1021,80 @@ func loadToolManifests(dir string) ([]toolManifest, error) {
 		if _, err := toml.DecodeFile(path, &t); err != nil {
 			return nil, fmt.Errorf("invalid tool manifest %s: %w", entry.Name(), err)
 		}
-		if t.ID == "" || t.Category == "" || t.Tier == "" || t.ValidationStatus == "" {
-			return nil, fmt.Errorf("tool manifest missing required fields: %s", entry.Name())
-		}
 		tools = append(tools, t)
 	}
 	if len(tools) == 0 {
 		return nil, errors.New("no tool manifests found")
 	}
+	if err := validateToolManifests(tools); err != nil {
+		return nil, err
+	}
 	sort.Slice(tools, func(i, j int) bool { return tools[i].ID < tools[j].ID })
 	return tools, nil
+}
+
+func validateToolManifests(tools []toolManifest) error {
+	allowedCategories := map[string]bool{
+		"shell_env":       true,
+		"essentials":      true,
+		"editor_workflow": true,
+		"network_tools":   true,
+		"utilities":       true,
+	}
+	allowedTiers := map[string]bool{
+		"core": true,
+	}
+	allowedValidationStatus := map[string]bool{
+		"validated": true,
+		"planned":   true,
+	}
+	allowedInstallSources := map[string]bool{
+		"native":      true,
+		"brew":        true,
+		"unsupported": true,
+	}
+	requiredOS := []string{"ubuntu", "fedora", "arch"}
+	seenIDs := map[string]bool{}
+
+	for _, t := range tools {
+		if t.ID == "" || t.Category == "" || t.Tier == "" || t.ValidationStatus == "" {
+			return fmt.Errorf("tool manifest missing required fields: %s", t.ID)
+		}
+		if seenIDs[t.ID] {
+			return fmt.Errorf("duplicate tool id: %s", t.ID)
+		}
+		seenIDs[t.ID] = true
+
+		if !allowedCategories[t.Category] {
+			return fmt.Errorf("invalid category for %s: %s", t.ID, t.Category)
+		}
+		if !allowedTiers[t.Tier] {
+			return fmt.Errorf("invalid tier for %s: %s", t.ID, t.Tier)
+		}
+		if !allowedValidationStatus[t.ValidationStatus] {
+			return fmt.Errorf("invalid validation_status for %s: %s", t.ID, t.ValidationStatus)
+		}
+		for _, osID := range requiredOS {
+			source := t.InstallSource[osID]
+			if source == "" {
+				return fmt.Errorf("missing install_source[%s] for %s", osID, t.ID)
+			}
+			if !allowedInstallSources[source] {
+				return fmt.Errorf("invalid install_source[%s] for %s: %s", osID, t.ID, source)
+			}
+			if source == "native" {
+				if strings.TrimSpace(t.PackageName[osID]) == "" {
+					return fmt.Errorf("missing package_name[%s] for %s", osID, t.ID)
+				}
+			}
+			if source == "brew" {
+				if strings.TrimSpace(t.PackageName["brew"]) == "" {
+					return fmt.Errorf("missing package_name[brew] for %s", t.ID)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func backupAndWrite(path string, data []byte) error {
@@ -952,6 +1145,24 @@ func (w *lineWriter) Write(p []byte) (int, error) {
 		_ = w.buf.WriteByte(b)
 	}
 	return len(p), nil
+}
+
+func buildSummaryLines(err error) []string {
+	if err == nil {
+		return []string{"all phases completed"}
+	}
+	lines := []string{}
+	for _, line := range strings.Split(err.Error(), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		lines = append(lines, trimmed)
+	}
+	if len(lines) == 0 {
+		return []string{err.Error()}
+	}
+	return lines
 }
 
 func fatalf(format string, args ...any) {

@@ -1,5 +1,7 @@
 FROM --platform=linux/amd64 archlinux:latest
 
+# Arch is rolling; keep latest intentionally for package ecosystem parity.
+
 # Disable pacman's seccomp sandbox — required in Docker environments that
 # restrict certain syscalls (e.g. Docker Desktop on macOS / Apple Silicon).
 # Without this, pacman fails with "error restricting syscalls via seccomp: 22".

@@ -7,15 +7,17 @@ This roadmap documents both:
 
 ## Current state
 
-Implemented:
-
-- bootstrap downloader with checksum verification in [`get.qest.sh`](./get.qest.sh)
-- Go installer entrypoint in [`cmd/qest/main.go`](./cmd/qest/main.go)
-- full-screen wizard path (TTY) + plain fallback (`--no-gum` / non-TTY)
-- phase-based install orchestration with summary status
-- Cloudflare Worker bootstrap serving and fallback response messaging
-- per-tool TOML catalog in [`manifests/tools/`](./manifests/tools)
-- CI + release workflow scaffolding for static binaries
+| Area | Status | Notes |
+| --- | --- | --- |
+| Bootstrap binary downloader + checksum verify | Implemented | [`get.qest.sh`](./get.qest.sh) |
+| Full-screen wizard + plain mode fallback | Implemented | [`cmd/qest/main.go`](./cmd/qest/main.go) |
+| Profile/category/dotfiles decision flow | Implemented | Full / Shell / Essentials / Custom |
+| Phase-based install engine with summary | Implemented | tools, shell_plugins, config, default_shell |
+| Cloudflare Worker bootstrap endpoint | Implemented | fallback command on upstream failure |
+| TOML manifest catalog | Implemented | [`manifests/tools/`](./manifests/tools) |
+| CI manifest validation command | Implemented | `go run ./cmd/qest --validate-manifests` |
+| Cross-distro verify gate | Implemented | [`tests/verify.sh`](./tests/verify.sh) via Docker matrix |
+| v0.2/v0.3 promoted batch gates | Planned | staged rollout after per-tool validation |
 
 ## Versioning policy
 
@@ -46,6 +48,16 @@ Editor/workflow baseline:
 Validation gate:
 
 - `tests/verify.sh` passes for all `v0.1` tools on Ubuntu/Fedora/Arch Docker containers after Go binary install.
+
+### v0.1 release checklist
+
+- [ ] Tag release with `v*`
+- [ ] Publish `qest-linux-amd64`, `qest-linux-arm64` and `.sha256` assets
+- [ ] Confirm bootstrap script serves current release path
+- [ ] Confirm Worker route serves script with fallback response
+- [ ] Run CI green including manifest validation and Docker matrix
+- [ ] Verify `tests/verify.sh` passes on Ubuntu, Fedora, Arch
+- [ ] Update release tracker and docs state
 
 ### v0.2 (extended optional set)
 

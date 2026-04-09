@@ -40,6 +40,34 @@ check_dir() {
   fi
 }
 
+has_pkg() {
+  local pkg="$1"
+  if command -v dpkg >/dev/null 2>&1; then
+    dpkg -s "$pkg" >/dev/null 2>&1
+    return $?
+  fi
+  if command -v rpm >/dev/null 2>&1; then
+    rpm -q "$pkg" >/dev/null 2>&1
+    return $?
+  fi
+  if command -v pacman >/dev/null 2>&1; then
+    pacman -Q "$pkg" >/dev/null 2>&1
+    return $?
+  fi
+  return 1
+}
+
+check_pkg() {
+  local label="$1"; shift
+  for pkg in "$@"; do
+    if has_pkg "$pkg"; then
+      pass "$label [$pkg]"
+      return 0
+    fi
+  done
+  fail "$label [tried: $*]"
+}
+
 if [ ! -f /etc/os-release ]; then
   echo "Cannot read /etc/os-release"
   exit 1
@@ -56,6 +84,7 @@ echo ""
 echo "Core shell and essentials"
 check_cmd "zsh" zsh
 check_cmd "starship" starship
+check_pkg "zsh-autosuggestions package" zsh-autosuggestions
 check_cmd "zoxide" zoxide
 check_cmd "fzf" fzf
 check_cmd "bat" bat batcat
