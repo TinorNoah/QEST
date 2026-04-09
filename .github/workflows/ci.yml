@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: qest-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -12,8 +15,8 @@ jobs:
   go-build-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.22'
       - name: Go fmt check
@@ -28,7 +31,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Run shellcheck
@@ -37,8 +40,8 @@ jobs:
   preset-smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.22'
       - name: Mark scripts executable
@@ -52,6 +55,6 @@ jobs:
       matrix:
         distro: [ubuntu, fedora, arch]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run distro integration test
         run: ./test_docker.sh "${{ matrix.distro }}"
