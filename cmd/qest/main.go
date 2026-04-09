@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/TinorNoah/QEST/internal/assets"
+	embeddedmanifests "github.com/TinorNoah/QEST/manifests"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -1021,20 +1023,38 @@ func profileCategories(profile string) map[string]bool {
 
 func loadToolManifests(dir string) ([]toolManifest, error) {
 	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
 	tools := make([]toolManifest, 0, len(entries))
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".toml") {
-			continue
+	if err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".toml") {
+				continue
+			}
+			path := filepath.Join(dir, entry.Name())
+			var t toolManifest
+			if _, err := toml.DecodeFile(path, &t); err != nil {
+				return nil, fmt.Errorf("invalid tool manifest %s: %w", entry.Name(), err)
+			}
+			tools = append(tools, t)
 		}
-		path := filepath.Join(dir, entry.Name())
-		var t toolManifest
-		if _, err := toml.DecodeFile(path, &t); err != nil {
-			return nil, fmt.Errorf("invalid tool manifest %s: %w", entry.Name(), err)
+	} else {
+		embeddedEntries, embeddedErr := fs.ReadDir(embeddedmanifests.ToolFS, "tools")
+		if embeddedErr != nil {
+			return nil, err
 		}
-		tools = append(tools, t)
+		for _, entry := range embeddedEntries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".toml") {
+				continue
+			}
+			data, readErr := fs.ReadFile(embeddedmanifests.ToolFS, filepath.Join("tools", entry.Name()))
+			if readErr != nil {
+				return nil, fmt.Errorf("cannot read embedded tool manifest %s: %w", entry.Name(), readErr)
+			}
+			var t toolManifest
+			if _, decodeErr := toml.Decode(string(data), &t); decodeErr != nil {
+				return nil, fmt.Errorf("invalid embedded tool manifest %s: %w", entry.Name(), decodeErr)
+			}
+			tools = append(tools, t)
+		}
 	}
 	if len(tools) == 0 {
 		return nil, errors.New("no tool manifests found")
