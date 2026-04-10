@@ -7,16 +7,16 @@ if [[ -z "$ZSH_PATH" ]]; then
 fi
 
 if [ "$SHELL" != "$ZSH_PATH" ]; then
-    echo "Zsh is not your default shell."
+    qest_info "zsh is not your default shell."
     
     if [[ "$DRY_RUN" == "1" ]]; then
-        echo "[DRY RUN] Would prompt and run 'chsh -s $ZSH_PATH'"
+        qest_info "[DRY RUN] Would prompt and run 'chsh -s $ZSH_PATH'."
     else
         if qest_confirm "Would you like to make Zsh your default shell?" 1; then
-            echo "Changing default shell to zsh..."
-            chsh -s "$ZSH_PATH" || echo "Please run 'chsh -s $ZSH_PATH' manually to change your shell."
+            qest_info "Changing default shell to zsh."
+            chsh -s "$ZSH_PATH" || qest_warn "Unable to change shell automatically. Run 'chsh -s $ZSH_PATH' manually, then log out and back in."
         else
-            echo "Skipping default shell change."
+            qest_info "Skipping default shell change."
         fi
     fi
 fi

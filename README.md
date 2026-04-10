@@ -57,6 +57,35 @@ For local development runs, execute from the repo root so `manifests/tools` is d
   - `--dry-run` -> preview commands
   - `--no-gum` -> plain sequential mode
 
+## Terminal UX modes
+
+QEST has three terminal UX paths. Pick the one that matches your environment:
+
+1. **Interactive wizard (default in TTY)**
+   - Best for first-run guided setup.
+   - Uses consistent key hints in every step (`Enter`, `B/Esc`, `Ctrl+C`).
+2. **Plain mode (`--no-gum` or non-TTY)**
+   - Uses sequential prompts and defaults without full-screen UI.
+   - Best for constrained terminals, SSH sessions, and CI-like shells.
+3. **Non-interactive (`--yes`)**
+   - Installs default profile without prompts.
+   - Combine with `--dry-run` to preview commands safely.
+
+Output messaging uses consistent levels:
+- `[INFO]` for progress and skipped phases
+- `[WARN]` for recoverable issues with fallback behavior
+- `[ERROR]` for blocking issues with next-step guidance
+- `[SUCCESS]` for completed actions
+
+Useful flags:
+- `--yes` / `-y`: run non-interactively with defaults
+- `--dry-run`: preview actions without system changes
+- `--no-gum`: disable optional Gum-enhanced terminal UI
+
+Optional environment variables:
+- `NO_COLOR=1`: disable ANSI colors in terminal output
+- `QEST_USE_EMOJI=1`: enable emoji prefixes in terminal messages
+
 ## v0.1 validated default set
 
 QEST currently defaults to a small cross-OS validated set:
@@ -65,6 +94,32 @@ QEST currently defaults to a small cross-OS validated set:
 - essentials: `bat`, `ripgrep`, `fd`, `jq`, `btop`, `eza`, `git-delta`
 - editor/workflow: `helix`, `zellij`, `lazygit`
 - config: bundled `.zshrc` + `starship.toml` with backup/restore
+
+## Tool descriptions
+
+This section explains each default tool, what it is, and what it does in your day-to-day shell workflow.
+
+| Tool | What it is | What it does |
+| --- | --- | --- |
+| `zsh` | Unix shell | Primary interactive shell QEST configures as your working environment. |
+| `starship` | Cross-shell prompt engine | Adds a fast, informative prompt with git/language/context indicators. |
+| `zsh-autosuggestions` | zsh plugin | Suggests commands from shell history as you type. |
+| `fzf` | Fuzzy finder | Lets you search files/history/processes quickly from the terminal. |
+| `zoxide` | Smarter `cd` helper | Learns your directory usage and jumps to frequent paths fast. |
+| `bat` | Enhanced `cat` viewer | Displays files with syntax highlighting and better readability. |
+| `ripgrep` | Recursive search tool | Performs fast text search across projects (`rg`). |
+| `fd` | Friendly `find` alternative | Finds files/directories quickly with simpler defaults. |
+| `jq` | JSON processor | Filters, transforms, and pretty-prints JSON data in pipelines. |
+| `btop` | Interactive system monitor | Shows CPU, memory, network, and process metrics in a TUI. |
+| `eza` | Modern `ls` replacement | Improves directory listing with clearer metadata and tree views. |
+| `git-delta` | Git pager/highlighter | Makes `git diff` and related output easier to read. |
+| `helix` | Terminal code editor | Provides a modal editor optimized for keyboard workflows. |
+| `zellij` | Terminal multiplexer | Organizes terminal sessions into panes/tabs with persistent layouts. |
+| `lazygit` | Git TUI client | Gives an interactive terminal UI for common git operations. |
+| `fzf-tab` | zsh completion plugin | Adds fuzzy, preview-friendly tab completion in zsh. |
+| `fast-syntax-highlighting` | zsh syntax plugin | Highlights shell command syntax as you type to reduce mistakes. |
+
+For the full and evolving catalog, see [`manifests/tools/`](./manifests/tools).
 
 Verification gate:
 

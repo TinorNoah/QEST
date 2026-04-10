@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Placing config files..."
+qest_info "Applying shell configuration files."
 
 # SCRIPT_DIR is exported by setup.sh
 
@@ -26,7 +26,7 @@ resolve_dotfiles_source() {
         return 0
     fi
     if [[ "$DRY_RUN" == "1" ]]; then
-        echo "[DRY RUN] Would pull dotfiles from: $QEST_DOTFILES_REPO"
+        qest_info "[DRY RUN] Would pull dotfiles from: $QEST_DOTFILES_REPO"
         return 0
     fi
 
@@ -35,9 +35,9 @@ resolve_dotfiles_source() {
     mkdir -p "$cache_dir"
 
     if [[ -d "$repo_dir/.git" ]]; then
-        qest_spin "Updating dotfiles repo..." run_with_retry git -C "$repo_dir" pull --ff-only || qest_error "Failed to update dotfiles repo. Falling back to bundled configs."
+        qest_spin "Updating dotfiles repo..." run_with_retry git -C "$repo_dir" pull --ff-only || qest_warn "Failed to update dotfiles repo. Falling back to bundled configs."
     else
-        qest_spin "Cloning dotfiles repo..." run_with_retry git clone --depth 1 "$QEST_DOTFILES_REPO" "$repo_dir" || qest_error "Failed to clone dotfiles repo. Falling back to bundled configs."
+        qest_spin "Cloning dotfiles repo..." run_with_retry git clone --depth 1 "$QEST_DOTFILES_REPO" "$repo_dir" || qest_warn "Failed to clone dotfiles repo. Falling back to bundled configs."
     fi
 
     if [[ -f "$repo_dir/.zshrc" ]]; then
@@ -61,33 +61,33 @@ backup_and_copy() {
         timestamp=$(date +"%Y%m%d_%H%M%S")
         backup_file="${dest}.qest.bak.${timestamp}"
         mv "$dest" "$backup_file"
-        echo "Backed up existing $label to $backup_file"
+        qest_info "Backed up existing $label to $backup_file"
     fi
 
     cp "$src" "$dest"
-    echo "Copied $label to $dest"
+    qest_success "Copied $label to $dest"
 }
 
 if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY RUN] Would create $HOME/.config/zsh/ (for HISTFILE)"
-    echo "[DRY RUN] Would copy .zshrc to $HOME/.zshrc"
-    echo "[DRY RUN] Would copy starship.toml to $HOME/.config/starship.toml"
+    qest_info "[DRY RUN] Would create $HOME/.config/zsh/ (for HISTFILE)."
+    qest_info "[DRY RUN] Would copy .zshrc to $HOME/.zshrc."
+    qest_info "[DRY RUN] Would copy starship.toml to $HOME/.config/starship.toml."
 else
     resolve_dotfiles_source
 
     # Create the zsh config directory so HISTFILE can be written on first login.
     mkdir -p "$HOME/.config/zsh"
-    echo "Ensured $HOME/.config/zsh exists (required for HISTFILE)"
+    qest_info "Ensured $HOME/.config/zsh exists (required for HISTFILE)."
 
     if [ -f "$DOTFILES_ZSHRC" ]; then
         backup_and_copy "$DOTFILES_ZSHRC" "$HOME/.zshrc" ".zshrc"
     else
-        echo "Error: .zshrc not found in configured source."
+        qest_error ".zshrc not found in configured source. Add .zshrc to your repo or rerun without custom dotfiles."
     fi
 
     if [ -f "$DOTFILES_STARSHIP" ]; then
         backup_and_copy "$DOTFILES_STARSHIP" "$HOME/.config/starship.toml" "starship.toml"
     else
-        echo "Error: starship.toml not found in configured source."
+        qest_error "starship.toml not found in configured source. Add starship.toml to your repo or rerun without custom dotfiles."
     fi
 fi

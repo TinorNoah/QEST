@@ -1,15 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Preparing package installation for macOS..."
+qest_info "Preparing package installation for macOS."
 
 if ! command -v brew &> /dev/null; then
-    echo "Homebrew is required on macOS."
+    qest_warn "Homebrew is required on macOS."
     if [[ "$DRY_RUN" == "1" ]]; then
-        echo "[DRY RUN] Would install Homebrew from brew.sh"
+        qest_info "[DRY RUN] Would install Homebrew from brew.sh."
     else
         if ! qest_confirm "Install Homebrew now?" 1; then
-            echo "Homebrew is required to continue on macOS. Exiting."
+            qest_error "Homebrew is required to continue on macOS. Install Homebrew and re-run qest."
             exit 1
         fi
         installer_file="/tmp/qest-brew-install.sh"
@@ -37,7 +37,7 @@ if [[ -z "$manifest_path" ]]; then
 fi
 
 if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY RUN] Would install packages from $manifest_path"
+    qest_info "[DRY RUN] Would install packages from $manifest_path"
     return 0
 fi
 
@@ -50,5 +50,5 @@ if [[ "${#MACOS_PACKAGES_ARRAY[@]}" -eq 0 ]]; then
     return 0
 fi
 
-qest_spin "Installing ${#MACOS_PACKAGES_ARRAY[@]} packages via Homebrew..." run_with_retry brew install "${MACOS_PACKAGES_ARRAY[@]}" || qest_error "Some macOS packages failed to install."
+qest_spin "Installing ${#MACOS_PACKAGES_ARRAY[@]} packages via Homebrew..." run_with_retry brew install "${MACOS_PACKAGES_ARRAY[@]}" || qest_warn "Some macOS packages failed to install. Review /tmp/qest-install.log and retry missing packages."
 qest_success "macOS package provisioning complete."

@@ -78,6 +78,15 @@ type installer struct {
 
 var errUserCancelled = errors.New("installer cancelled")
 
+const (
+	wizardTitleText           = "QEST Installer Wizard"
+	hintContinueOrQuit        = "Enter: continue | Ctrl+C: quit"
+	hintListSelectBackOrQuit  = "Arrows: move | Enter: select | B/Esc: back | Ctrl+C: quit"
+	hintToggleContinueOrBack  = "Arrows: move | Space: toggle | Enter: continue | B/Esc: back"
+	hintTypeContinueOrBack    = "Type URL | Enter: continue | B/Esc: back"
+	hintConfirmInstallOrBack  = "Enter/Y: install | B/Esc: back | N/Q: cancel"
+)
+
 func main() {
 	cfg := parseFlags()
 
@@ -222,7 +231,8 @@ func choosePlainSelection() (selection, error) {
 		dotfilesMode: "bundled",
 		categories:   defaultCategories(),
 	}
-	fmt.Println("QEST setup profile:")
+	fmt.Println("QEST setup profile")
+	fmt.Println("Press Ctrl+C at any prompt to cancel.")
 	fmt.Println("1) full")
 	fmt.Println("2) shell")
 	fmt.Println("3) essentials")
@@ -264,7 +274,17 @@ func choosePlainSelection() (selection, error) {
 	case "3":
 		sel.dotfilesMode = "skip"
 	}
-	fmt.Println("")
+	fmt.Println()
+	fmt.Println("Review selection")
+	fmt.Printf("- Profile: %s\n", sel.profile)
+	fmt.Printf("- Dotfiles: %s\n", sel.dotfilesMode)
+	if len(sel.categories) > 0 {
+		fmt.Printf("- Categories: %s\n", strings.Join(selectedCategoryLabels(sel.categories), ", "))
+	}
+	if sel.dotfilesRepo != "" {
+		fmt.Printf("- Dotfiles repo: %s\n", sel.dotfilesRepo)
+	}
+	fmt.Println()
 	fmt.Printf("Install now with profile '%s'? [y/N]: ", sel.profile)
 	raw, _ = reader.ReadString('\n')
 	confirmed := strings.EqualFold(strings.TrimSpace(raw), "y")
@@ -430,28 +450,34 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch m.step {
 	case stepWelcome:
-		if k, ok := msg.(tea.KeyMsg); ok && (k.String() == "enter" || k.String() == " ") {
+		if k, ok := msg.(tea.KeyMsg); ok && (k.String() == "enter" || k.String() == " " || k.String() == "y") {
 			m.step = stepProfile
 			return m, nil
 		}
 	case stepProfile:
 		var cmd tea.Cmd
 		m.profileList, cmd = m.profileList.Update(msg)
-		if k, ok := msg.(tea.KeyMsg); ok && k.String() == "enter" {
-			if selected, ok := m.profileList.SelectedItem().(menuItem); ok {
-				m.selections.profile = selected.value
-				if selected.value == "custom" {
-					m.step = stepCustom
-					m.categorySet = map[string]bool{}
-					m.toolCandidates = nil
-					m.toolSet = map[string]bool{}
-					m.toolIdx = 0
-				} else {
-					m.selections.categories = profileCategories(selected.value)
-					m.step = stepDotfiles
-				}
+		if k, ok := msg.(tea.KeyMsg); ok {
+			if k.String() == "b" || k.String() == "esc" {
+				m.step = stepWelcome
+				return m, nil
 			}
-			return m, nil
+			if k.String() == "enter" {
+				if selected, ok := m.profileList.SelectedItem().(menuItem); ok {
+					m.selections.profile = selected.value
+					if selected.value == "custom" {
+						m.step = stepCustom
+						m.categorySet = map[string]bool{}
+						m.toolCandidates = nil
+						m.toolSet = map[string]bool{}
+						m.toolIdx = 0
+					} else {
+						m.selections.categories = profileCategories(selected.value)
+						m.step = stepDotfiles
+					}
+				}
+				return m, nil
+			}
 		}
 		return m, cmd
 	case stepCustom:
@@ -478,7 +504,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.toolSet = map[string]bool{}
 				m.toolIdx = 0
 				m.step = stepTools
-			case "esc":
+			case "b", "esc":
 				m.step = stepProfile
 			}
 		}
@@ -505,7 +531,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.selections.tools = m.toolSet
 				m.step = stepDotfiles
-			case "esc":
+			case "b", "esc":
 				m.step = stepCustom
 			}
 		}
@@ -514,7 +540,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.dotfilesList, cmd = m.dotfilesList.Update(msg)
 		if k, ok := msg.(tea.KeyMsg); ok {
-			if k.String() == "esc" {
+			if k.String() == "b" || k.String() == "esc" {
 				if m.selections.profile == "custom" {
 					m.step = stepTools
 				} else {
@@ -549,7 +575,7 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(m.dotfilesRepo) > 0 {
 					m.dotfilesRepo = m.dotfilesRepo[:len(m.dotfilesRepo)-1]
 				}
-			case "esc":
+			case "b", "esc":
 				m.step = stepDotfiles
 			default:
 				if len(k.String()) == 1 {
@@ -579,12 +605,66 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m wizardModel) View() string {
-	render := lipgloss.NewStyle().Padding(1, 2).Border(lipgloss.RoundedBorder())
-	if m.colorDisabled {
-		render = render.UnsetForeground().UnsetBackground()
+func wizardFrameStyle(colorDisabled bool) lipgloss.Style {
+	style := lipgloss.NewStyle().Padding(1, 2).Border(lipgloss.RoundedBorder())
+	if colorDisabled {
+		return style.UnsetForeground().UnsetBackground()
 	}
-	title := lipgloss.NewStyle().Bold(true).Render("QEST Installer Wizard")
+	return style
+}
+
+func wizardTitleStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true)
+}
+
+func wizardHintStyle(colorDisabled bool) lipgloss.Style {
+	style := lipgloss.NewStyle().Faint(true)
+	if colorDisabled {
+		return style.UnsetForeground().UnsetBackground()
+	}
+	return style
+}
+
+func wizardSectionTitleStyle(colorDisabled bool) lipgloss.Style {
+	style := lipgloss.NewStyle().Bold(true)
+	if colorDisabled {
+		return style.UnsetForeground().UnsetBackground()
+	}
+	return style
+}
+
+func wizardDescriptionBoxStyle(colorDisabled bool) lipgloss.Style {
+	style := lipgloss.NewStyle().Padding(0, 1).Border(lipgloss.NormalBorder())
+	if colorDisabled {
+		return style.UnsetForeground().UnsetBackground()
+	}
+	return style
+}
+
+func renderToolDescriptionBox(tool toolManifest, osID string, colorDisabled bool) string {
+	notes := strings.TrimSpace(tool.Notes)
+	if notes == "" {
+		notes = "No additional notes available for this tool."
+	}
+	pkg := packageForOS(tool, osID)
+	if pkg == "" {
+		pkg = packageForOS(tool, "brew")
+	}
+	if pkg == "" {
+		pkg = tool.ID
+	}
+	body := strings.Builder{}
+	body.WriteString(fmt.Sprintf("Tool: %s\n", tool.ID))
+	body.WriteString(fmt.Sprintf("Category: %s\n", categoryLabel(tool.Category)))
+	body.WriteString(fmt.Sprintf("Source: %s\n", sourceForOS(tool, osID)))
+	body.WriteString(fmt.Sprintf("Package: %s\n", pkg))
+	body.WriteString(fmt.Sprintf("What it does: %s\n", notes))
+	return wizardDescriptionBoxStyle(colorDisabled).Render(body.String())
+}
+
+func (m wizardModel) View() string {
+	render := wizardFrameStyle(m.colorDisabled)
+	title := wizardTitleStyle().Render(wizardTitleText)
 
 	var body strings.Builder
 	body.WriteString(title + "\n\n")
@@ -594,10 +674,10 @@ func (m wizardModel) View() string {
 	case stepWelcome:
 		body.WriteString("Welcome to QEST.\n")
 		body.WriteString("Press Enter to start setup.\n")
-		hint = "Enter: continue | Ctrl+C: quit"
+		hint = hintContinueOrQuit
 	case stepProfile:
 		body.WriteString(m.profileList.View())
-		hint = "Arrows: move | Enter: select | Ctrl+C: quit"
+		hint = hintListSelectBackOrQuit
 	case stepCustom:
 		categories := categoryOptions()
 		body.WriteString("Custom categories (space to toggle, enter to continue):\n\n")
@@ -612,7 +692,7 @@ func (m wizardModel) View() string {
 			}
 			body.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, mark, categoryLabel(cat)))
 		}
-		hint = "Arrows: move | Space: toggle | Enter: continue | Esc: back"
+		hint = hintToggleContinueOrBack
 	case stepTools:
 		body.WriteString("Custom tools (space to toggle, enter to continue):\n\n")
 		if len(m.toolCandidates) == 0 {
@@ -631,17 +711,18 @@ func (m wizardModel) View() string {
 		}
 		if len(m.toolCandidates) > 0 && m.toolIdx < len(m.toolCandidates) {
 			current := m.toolCandidates[m.toolIdx]
-			body.WriteString("\nTool details:\n")
-			body.WriteString(fmt.Sprintf("- %s\n", toolDetail(current, m.system.osID)))
+			body.WriteString("\n")
+			body.WriteString(wizardSectionTitleStyle(m.colorDisabled).Render("Tool description") + "\n")
+			body.WriteString(renderToolDescriptionBox(current, m.system.osID, m.colorDisabled) + "\n")
 		}
-		hint = "Arrows: move | Space: toggle | Enter: continue | Esc: back"
+		hint = hintToggleContinueOrBack
 	case stepDotfiles:
 		body.WriteString(m.dotfilesList.View())
-		hint = "Arrows: move | Enter: select | Esc: back"
+		hint = hintListSelectBackOrQuit
 	case stepDotfilesRepo:
 		body.WriteString("Enter GitHub dotfiles repo URL and press Enter:\n\n")
 		body.WriteString(m.dotfilesRepo)
-		hint = "Type URL | Enter: continue | Esc: back"
+		hint = hintTypeContinueOrBack
 	case stepConfirm:
 		body.WriteString("Review before install:\n\n")
 		body.WriteString(fmt.Sprintf("- Profile: %s\n", m.selections.profile))
@@ -662,11 +743,11 @@ func (m wizardModel) View() string {
 			body.WriteString(fmt.Sprintf("- Dotfiles repo: %s\n", m.selections.dotfilesRepo))
 		}
 		body.WriteString("\nReady to install.\n")
-		hint = "Enter/Y: install | B/Esc: back | N/Q: cancel"
+		hint = hintConfirmInstallOrBack
 	}
 
 	if hint != "" {
-		body.WriteString("\n" + hint + "\n")
+		body.WriteString("\n" + wizardHintStyle(m.colorDisabled).Render(hint) + "\n")
 	}
 
 	content := render.Render(body.String())

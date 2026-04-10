@@ -106,27 +106,27 @@ export -f run_with_retry
 
 preflight_checks() {
     if ! command -v bash &>/dev/null; then
-        echo "bash is required."
+        qest_error "bash is required. Install bash, then re-run qest."
         exit 1
     fi
     if ! command -v curl &>/dev/null; then
-        echo "curl is required."
+        qest_error "curl is required. Install curl, then re-run qest."
         exit 1
     fi
     if [[ "$DRY_RUN" != "1" ]]; then
         mkdir -p "$HOME/.config" "$HOME/.cache/qest" || {
-            echo "Unable to write required config/cache directories in $HOME."
+            qest_error "Unable to write required config/cache directories in $HOME. Check permissions, then re-run qest."
             exit 1
         }
         if ! run_with_retry curl -fsS --max-time 10 https://github.com &>/dev/null; then
-            echo "Network check failed. Please verify internet connectivity."
+            qest_error "Network check failed. Verify internet connectivity and firewall settings, then try again."
             exit 1
         fi
         if [[ "${OS:-}" != "macos" ]]; then
             if ! sudo -n true &>/dev/null; then
-                echo "sudo privileges are required. You may be prompted now."
+                qest_warn "sudo privileges are required. You may be prompted now."
                 sudo -v || {
-                    echo "Unable to acquire sudo credentials."
+                    qest_error "Unable to acquire sudo credentials. Run 'sudo -v' manually and retry."
                     exit 1
                 }
             fi
@@ -137,10 +137,10 @@ preflight_checks() {
 # Source OS detection
 source "$SCRIPT_DIR/scripts/01_os_detect.sh"
 
-preflight_checks
-
 # Source UI helper functions
 source "$SCRIPT_DIR/scripts/00_init_ui.sh"
+
+preflight_checks
 source "$SCRIPT_DIR/scripts/06_profile_menu.sh"
 
 qest_choose_profile_if_needed
@@ -163,35 +163,34 @@ if [[ "${INSTALL_SHELL_STACK:-0}" == "1" || "${INSTALL_ESSENTIALS:-0}" == "1" ||
     elif [[ "$OS" == "macos" ]]; then
         source "$SCRIPT_DIR/scripts/02_install_macos.sh"
     else
-        echo "Unsupported OS: $OS. Exiting."
+        qest_error "Unsupported OS: $OS. Supported targets are Ubuntu/Debian, Fedora, Arch/Manjaro, and macOS."
         exit 1
     fi
 else
-    echo "Skipping package installation phase for selected profile."
+    qest_info "Skipping package installation phase for selected profile."
 fi
 
 if [[ "${INSTALL_EXTRAS:-0}" == "1" || "${INSTALL_SHELL_STACK:-0}" == "1" ]]; then
     source "$SCRIPT_DIR/scripts/03_install_extras.sh"
 else
-    echo "Skipping extras and shell-stack plugins installation."
+    qest_info "Skipping extras and shell-stack plugins installation."
 fi
 
 if [[ "${INSTALL_CONFIG:-0}" == "1" ]]; then
     source "$SCRIPT_DIR/scripts/04_config_setup.sh"
 else
-    echo "Skipping dotfiles configuration."
+    qest_info "Skipping dotfiles configuration."
 fi
 
 if [[ "${INSTALL_DEFAULT_SHELL:-0}" == "1" ]]; then
     source "$SCRIPT_DIR/scripts/05_set_default_shell.sh"
 else
-    echo "Skipping default shell change."
+    qest_info "Skipping default shell change."
 fi
 
-qest_success "Setup is strictly complete!"
+qest_success "Setup completed."
 if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY RUN] Finished mocked setup."
+    qest_info "[DRY RUN] Finished preview run."
 else
-    echo "Please log out and log back in, or run 'zsh'"
-    echo "to start using your beautifully empowered environment."
+    qest_info "Next step: log out and back in, or run 'zsh' to start the configured shell."
 fi

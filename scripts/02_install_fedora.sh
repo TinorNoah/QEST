@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Updating packages and installing base dependencies (Fedora)..."
+qest_info "Updating package indexes and installing base dependencies (Fedora)."
 
 qest_spin "Updating dnf repositories..." run_with_retry execute_sudo dnf update -y
 # PACKAGES variable is exported from 01_os_detect.sh
@@ -18,7 +18,7 @@ elif [[ "${INSTALL_SHELL_STACK:-0}" == "1" ]]; then
 fi
 
 if [[ -n "$manifest_path" ]]; then
-    echo "Installing native tools from: $manifest_path"
+    qest_info "Installing native tools from manifest: $manifest_path"
     FEDORA_PACKAGES_ARRAY=()
     while IFS= read -r pkg; do
         [[ -n "$pkg" ]] && FEDORA_PACKAGES_ARRAY+=("$pkg")

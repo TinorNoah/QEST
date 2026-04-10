@@ -12,9 +12,10 @@ export default {
     if (!upstream.ok) {
       return new Response(
         `#!/bin/bash
-echo "QEST bootstrap is temporarily unavailable (upstream fetch failed)."
-echo "Try again in a moment, or use direct fallback:"
+echo "[ERROR] QEST bootstrap is temporarily unavailable (upstream fetch failed)."
+echo "[INFO] Retry in a few minutes, or run the direct fallback now:"
 echo "curl -fsSL ${FALLBACK_URL} | bash"
+echo "[INFO] If this keeps failing, check https://www.githubstatus.com/ and your network settings."
 exit 1
 `,
         {

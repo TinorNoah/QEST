@@ -60,20 +60,75 @@ install_gum_if_possible
 
 # Fallback UI Functions
 
-qest_success() {
+qest_prefix() {
+    local level="$1"
+    case "$level" in
+        success) echo "SUCCESS" ;;
+        info) echo "INFO" ;;
+        warn) echo "WARN" ;;
+        error) echo "ERROR" ;;
+        *) echo "LOG" ;;
+    esac
+}
+
+qest_icon() {
+    local level="$1"
+    if [[ "${QEST_USE_EMOJI:-0}" != "1" ]]; then
+        echo ""
+        return 0
+    fi
+    case "$level" in
+        success) echo "✅ " ;;
+        info) echo "ℹ️  " ;;
+        warn) echo "⚠️  " ;;
+        error) echo "❌ " ;;
+        *) echo "" ;;
+    esac
+}
+
+qest_print() {
+    local level="$1"
+    local message="$2"
+    local prefix icon line color=""
+    prefix="$(qest_prefix "$level")"
+    icon="$(qest_icon "$level")"
+    line="${icon}[${prefix}] ${message}"
+
     if should_use_gum && [[ "$DRY_RUN" != "1" ]]; then
-        gum format "# ✨ $1"
+        gum format "# ${line}"
+        return 0
+    fi
+
+    if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+        case "$level" in
+            success) color="\e[32m" ;;
+            info) color="\e[36m" ;;
+            warn) color="\e[33m" ;;
+            error) color="\e[31m" ;;
+        esac
+    fi
+
+    if [[ -n "$color" ]]; then
+        echo -e "${color}${line}\e[0m"
     else
-        echo -e "\e[32m✨ $1\e[0m"
+        echo "${line}"
     fi
 }
 
+qest_success() {
+    qest_print "success" "$1"
+}
+
+qest_info() {
+    qest_print "info" "$1"
+}
+
+qest_warn() {
+    qest_print "warn" "$1"
+}
+
 qest_error() {
-    if should_use_gum && [[ "$DRY_RUN" != "1" ]]; then
-        gum format "# ❌ **ERROR:** $1"
-    else
-        echo -e "\e[31m❌ ERROR: $1\e[0m"
-    fi
+    qest_print "error" "$1"
 }
 
 qest_spin() {
@@ -170,4 +225,4 @@ qest_pick_many() {
     printf '%s\n' "${picked[@]}"
 }
 
-export -f qest_success qest_error qest_spin qest_confirm qest_pick_one qest_pick_many should_use_gum
+export -f qest_success qest_info qest_warn qest_error qest_spin qest_confirm qest_pick_one qest_pick_many should_use_gum

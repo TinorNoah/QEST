@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Updating packages and installing base dependencies (Debian/Ubuntu)..."
+qest_info "Updating package indexes and installing base dependencies (Debian/Ubuntu)."
 
 qest_spin "Updating apt repositories..." run_with_retry execute_sudo apt-get update
 
@@ -19,7 +19,7 @@ elif [[ "${INSTALL_SHELL_STACK:-0}" == "1" ]]; then
 fi
 
 if [[ -n "$manifest_path" ]]; then
-    echo "Installing native tools from: $manifest_path"
+    qest_info "Installing native tools from manifest: $manifest_path"
     DEBIAN_PACKAGES_ARRAY=()
     while IFS= read -r pkg; do
         [[ -n "$pkg" ]] && DEBIAN_PACKAGES_ARRAY+=("$pkg")

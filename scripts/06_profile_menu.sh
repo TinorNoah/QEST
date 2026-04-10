@@ -76,6 +76,7 @@ qest_apply_profile() {
 qest_choose_profile_if_needed() {
     if [[ -n "${PROFILE:-}" ]]; then
         qest_apply_profile
+        qest_info "Using profile: $PROFILE"
         return 0
     fi
 
@@ -89,6 +90,7 @@ qest_choose_profile_if_needed() {
 
     PROFILE="$picked"
     qest_apply_profile
+    qest_info "Selected profile: $PROFILE"
 }
 
 export -f qest_apply_profile qest_choose_profile_if_needed
