@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["rg"]
+notes = "A very fast recursive text search tool for codebases and logs with gitignore-aware defaults."
 
 [install_source]
 ubuntu = "native"

@@ -3,6 +3,7 @@ category = "editor_workflow"
 tier = "core"
 validation_status = "validated"
 binary_names = ["hx"]
+notes = "A fast terminal code editor with modal editing, built-in language support, and LSP integration."
 
 [install_source]
 ubuntu = "brew"

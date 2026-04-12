@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["bat", "batcat"]
+notes = "A cat replacement with syntax highlighting and git-aware output for readable file previews."
 
 [install_source]
 ubuntu = "native"

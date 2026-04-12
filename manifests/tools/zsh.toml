@@ -3,6 +3,7 @@ category = "shell_env"
 tier = "core"
 validation_status = "validated"
 binary_names = ["zsh"]
+notes = "A powerful interactive shell with rich completion, scripting support, and plugin ecosystem."
 
 [install_source]
 ubuntu = "native"

@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["eza"]
+notes = "A modern ls replacement with better defaults, metadata, icons, and tree-style listings."
 
 [install_source]
 ubuntu = "brew"

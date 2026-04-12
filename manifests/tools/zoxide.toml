@@ -3,6 +3,7 @@ category = "shell_env"
 tier = "core"
 validation_status = "validated"
 binary_names = ["zoxide"]
+notes = "A smarter cd command that learns your habits and jumps to frequently used directories."
 
 [install_source]
 ubuntu = "native"

@@ -127,6 +127,10 @@ func main() {
 		},
 	}
 
+	if err := primeSudoCredentials(cfg, sys); err != nil {
+		fatalf("%v", err)
+	}
+
 	if isInteractive(cfg) {
 		if err := runInteractiveInstaller(inst); err != nil {
 			fatalf("install failed: %v", err)
@@ -137,6 +141,30 @@ func main() {
 	if err := runInstaller(context.Background(), &inst); err != nil {
 		fatalf("install failed: %v", err)
 	}
+}
+
+func primeSudoCredentials(cfg appConfig, sys systemInfo) error {
+	if cfg.dryRun || sys.osID == "macos" {
+		return nil
+	}
+	if _, err := exec.LookPath("sudo"); err != nil {
+		return fmt.Errorf("sudo is required: %w", err)
+	}
+	if term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) {
+		fmt.Println("qest: acquiring sudo credentials for installation steps...")
+		cmd := exec.Command("sudo", "-v")
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("unable to acquire sudo credentials: %w", err)
+		}
+		return nil
+	}
+	if err := exec.Command("sudo", "-n", "true").Run(); err != nil {
+		return errors.New("sudo credentials are required. Run 'sudo -v' in a terminal, then retry qest")
+	}
+	return nil
 }
 
 func parseFlags() appConfig {
@@ -1121,13 +1149,19 @@ func (i *installer) runCommand(ctx context.Context, useSudo bool, name string, a
 	cmdArgs := args
 	if useSudo {
 		cmdName = "sudo"
-		cmdArgs = append([]string{name}, args...)
+		cmdArgs = append([]string{"-n", name}, args...)
 	}
 	cmd := exec.CommandContext(ctx, cmdName, cmdArgs...)
 	writer := newLineWriter(func(line string) { i.logger(line) })
 	cmd.Stdout = writer
 	cmd.Stderr = writer
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		if useSudo {
+			return fmt.Errorf("sudo command failed. Run 'sudo -v' and retry: %w", err)
+		}
+		return err
+	}
+	return nil
 }
 
 func sourceForOS(t toolManifest, osID string) string {

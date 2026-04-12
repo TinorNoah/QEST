@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["btop"]
+notes = "An interactive terminal monitor for CPU, memory, disk, network, and process activity."
 
 [install_source]
 ubuntu = "native"

@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["fd", "fdfind"]
+notes = "A faster, user-friendly alternative to find with sensible defaults and simple filtering."
 
 [install_source]
 ubuntu = "native"

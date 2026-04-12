@@ -3,6 +3,7 @@ category = "editor_workflow"
 tier = "core"
 validation_status = "validated"
 binary_names = ["zellij"]
+notes = "A terminal workspace and multiplexer for managing panes, tabs, and persistent shell sessions."
 
 [install_source]
 ubuntu = "brew"

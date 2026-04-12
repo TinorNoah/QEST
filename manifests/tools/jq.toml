@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["jq"]
+notes = "A command-line JSON processor for querying, transforming, and formatting API responses and data files."
 
 [install_source]
 ubuntu = "native"

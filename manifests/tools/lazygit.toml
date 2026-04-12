@@ -3,6 +3,7 @@ category = "editor_workflow"
 tier = "core"
 validation_status = "validated"
 binary_names = ["lazygit"]
+notes = "A terminal UI for common git workflows like staging, committing, branching, and conflict resolution."
 
 [install_source]
 ubuntu = "brew"

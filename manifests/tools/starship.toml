@@ -3,6 +3,7 @@ category = "shell_env"
 tier = "core"
 validation_status = "validated"
 binary_names = ["starship"]
+notes = "A customizable cross-shell prompt that surfaces git status, runtime versions, and context at a glance."
 
 [install_source]
 ubuntu = "brew"

@@ -3,6 +3,7 @@ category = "essentials"
 tier = "core"
 validation_status = "validated"
 binary_names = ["delta"]
+notes = "A syntax-highlighted pager for git diff, blame, and log output that improves code review readability."
 
 [install_source]
 ubuntu = "brew"

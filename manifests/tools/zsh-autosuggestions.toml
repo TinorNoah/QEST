@@ -3,6 +3,7 @@ category = "shell_env"
 tier = "core"
 validation_status = "validated"
 binary_names = []
+notes = "A zsh plugin that suggests commands from your history as you type to speed up repeated workflows."
 
 [install_source]
 ubuntu = "native"
