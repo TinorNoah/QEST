@@ -1051,7 +1051,9 @@ func (i *installer) ensureBrew(ctx context.Context) error {
 	if err := i.runCommand(ctx, false, "curl", "-fsSL", "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh", "-o", tmp); err != nil {
 		return err
 	}
-	if err := i.runCommand(ctx, false, "bash", tmp); err != nil {
+	if err := i.runCommandWithEnv(ctx, false, map[string]string{
+		"NONINTERACTIVE": "1",
+	}, "bash", tmp); err != nil {
 		return err
 	}
 	i.addBrewToPath()
@@ -1138,6 +1140,10 @@ func (i *installer) setDefaultShell(ctx context.Context) error {
 }
 
 func (i *installer) runCommand(ctx context.Context, useSudo bool, name string, args ...string) error {
+	return i.runCommandWithEnv(ctx, useSudo, nil, name, args...)
+}
+
+func (i *installer) runCommandWithEnv(ctx context.Context, useSudo bool, extraEnv map[string]string, name string, args ...string) error {
 	if i.cfg.dryRun {
 		prefix := ""
 		if useSudo {
@@ -1154,13 +1160,21 @@ func (i *installer) runCommand(ctx context.Context, useSudo bool, name string, a
 		cmdArgs = append([]string{"-n", name}, args...)
 	}
 	cmd := exec.CommandContext(ctx, cmdName, cmdArgs...)
-	cmd.Stdin = os.Stdin
+	if len(extraEnv) > 0 {
+		cmd.Env = os.Environ()
+		for key, value := range extraEnv {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+		}
+	}
 	writer := newLineWriter(func(line string) { i.logger(line) })
 	cmd.Stdout = writer
 	cmd.Stderr = writer
 	if err := cmd.Run(); err != nil {
 		if useSudo {
 			return fmt.Errorf("sudo command failed. Run 'sudo -v' and retry: %w", err)
+		}
+		if strings.Contains(strings.ToLower(err.Error()), "exit status") {
+			return fmt.Errorf("command failed: %s %s: %w", name, strings.Join(args, " "), err)
 		}
 		return err
 	}
