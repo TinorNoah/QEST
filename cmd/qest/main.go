@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -88,6 +89,7 @@ const (
 )
 
 func main() {
+	appVersion = resolvedAppVersion(appVersion)
 	cfg := parseFlags()
 
 	if cfg.validateManifests {
@@ -141,6 +143,65 @@ func main() {
 	if err := runInstaller(context.Background(), &inst); err != nil {
 		fatalf("install failed: %v", err)
 	}
+}
+
+func resolvedAppVersion(base string) string {
+	if strings.TrimSpace(base) != "" && base != "dev" {
+		return base
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "dev"
+	}
+	shortRevision := ""
+	vcsTime := ""
+	isModified := false
+	for _, setting := range info.Settings {
+		switch setting.Key {
+		case "vcs.revision":
+			if len(setting.Value) >= 7 {
+				shortRevision = setting.Value[:7]
+			} else {
+				shortRevision = setting.Value
+			}
+		case "vcs.time":
+			vcsTime = setting.Value
+		case "vcs.modified":
+			isModified = setting.Value == "true"
+		}
+	}
+	version := info.Main.Version
+	if version == "" || version == "(devel)" {
+		version = "dev"
+	}
+	details := []string{}
+	if shortRevision != "" {
+		details = append(details, "rev "+shortRevision)
+	}
+	if vcsTime != "" {
+		details = append(details, vcsTime)
+	}
+	if isModified {
+		details = append(details, "dirty")
+	}
+	if len(details) == 0 {
+		if version == "dev" {
+			if gitVersion := resolvedGitVersion(); gitVersion != "" {
+				return gitVersion
+			}
+		}
+		return version
+	}
+	return fmt.Sprintf("%s (%s)", version, strings.Join(details, ", "))
+}
+
+func resolvedGitVersion() string {
+	cmd := exec.Command("git", "describe", "--tags", "--always", "--dirty")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func primeSudoCredentials(cfg appConfig) error {
@@ -924,6 +985,7 @@ func (m progressModel) View() string {
 }
 
 func runInstaller(ctx context.Context, inst *installer) error {
+	inst.logger(fmt.Sprintf("QEST %s", appVersion))
 	if err := preflightChecks(inst.sys); err != nil {
 		return err
 	}
@@ -1011,7 +1073,9 @@ func (i *installer) installTools(ctx context.Context) error {
 		if err := i.ensureBrew(ctx); err != nil {
 			return err
 		}
-		if err := i.runCommand(ctx, false, "brew", append([]string{"install"}, uniqueStrings(brewPkgs)...)...); err != nil {
+		if err := i.runCommandWithEnv(ctx, false, map[string]string{
+			"NONINTERACTIVE": "1",
+		}, "brew", append([]string{"install"}, uniqueStrings(brewPkgs)...)...); err != nil {
 			return err
 		}
 	}
