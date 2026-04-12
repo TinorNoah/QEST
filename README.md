@@ -63,10 +63,13 @@ QEST has three terminal UX paths. Pick the one that matches your environment:
 
 1. **Interactive wizard (default in TTY)**
    - Best for first-run guided setup.
+   - Opens directly at the profile menu (no extra welcome gate screen).
    - Uses consistent key hints in every step (`Enter`, `B/Esc`, `Ctrl+C`).
+   - Shows the current QEST version in the wizard title.
 2. **Plain mode (`--no-gum` or non-TTY)**
    - Uses sequential prompts and defaults without full-screen UI.
    - Best for constrained terminals, SSH sessions, and CI-like shells.
+   - Prints the current QEST version before prompt flow starts.
 3. **Non-interactive (`--yes`)**
    - Installs default profile without prompts.
    - Combine with `--dry-run` to preview commands safely.
@@ -207,6 +210,9 @@ Track progress:
   ```bash
   sudo -v
   ```
+- If install appears stuck at a password prompt:
+  - QEST now primes credentials before phases start.
+  - Run `sudo -v` in the same terminal and re-run QEST.
 - For plain mode in constrained terminals:
   ```bash
   go run ./cmd/qest --no-gum

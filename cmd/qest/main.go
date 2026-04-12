@@ -77,9 +77,9 @@ type installer struct {
 }
 
 var errUserCancelled = errors.New("installer cancelled")
+var appVersion = "dev"
 
 const (
-	wizardTitleText           = "QEST Installer Wizard"
 	hintContinueOrQuit        = "Enter: continue | Ctrl+C: quit"
 	hintListSelectBackOrQuit  = "Arrows: move | Enter: select | B/Esc: back | Ctrl+C: quit"
 	hintToggleContinueOrBack  = "Arrows: move | Space: toggle | Enter: continue | B/Esc: back"
@@ -127,7 +127,7 @@ func main() {
 		},
 	}
 
-	if err := primeSudoCredentials(cfg, sys); err != nil {
+	if err := primeSudoCredentials(cfg); err != nil {
 		fatalf("%v", err)
 	}
 
@@ -143,8 +143,8 @@ func main() {
 	}
 }
 
-func primeSudoCredentials(cfg appConfig, sys systemInfo) error {
-	if cfg.dryRun || sys.osID == "macos" {
+func primeSudoCredentials(cfg appConfig) error {
+	if cfg.dryRun {
 		return nil
 	}
 	if _, err := exec.LookPath("sudo"); err != nil {
@@ -259,6 +259,7 @@ func choosePlainSelection() (selection, error) {
 		dotfilesMode: "bundled",
 		categories:   defaultCategories(),
 	}
+	fmt.Printf("QEST %s\n", appVersion)
 	fmt.Println("QEST setup profile")
 	fmt.Println("Press Ctrl+C at any prompt to cancel.")
 	fmt.Println("1) full")
@@ -419,7 +420,7 @@ func chooseInteractiveSelection(sys systemInfo, tools []toolManifest) (selection
 	dList.SetFilteringEnabled(false)
 
 	model := wizardModel{
-		step:         stepWelcome,
+		step:         stepProfile,
 		profileList:  pList,
 		dotfilesList: dList,
 		categorySet:  map[string]bool{},
@@ -486,10 +487,6 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.profileList, cmd = m.profileList.Update(msg)
 		if k, ok := msg.(tea.KeyMsg); ok {
-			if k.String() == "b" || k.String() == "esc" {
-				m.step = stepWelcome
-				return m, nil
-			}
 			if k.String() == "enter" {
 				if selected, ok := m.profileList.SelectedItem().(menuItem); ok {
 					m.selections.profile = selected.value
@@ -641,6 +638,10 @@ func wizardFrameStyle(colorDisabled bool) lipgloss.Style {
 	return style
 }
 
+func wizardTitleText() string {
+	return fmt.Sprintf("QEST Installer Wizard (%s)", appVersion)
+}
+
 func wizardTitleStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true)
 }
@@ -692,7 +693,7 @@ func renderToolDescriptionBox(tool toolManifest, osID string, colorDisabled bool
 
 func (m wizardModel) View() string {
 	render := wizardFrameStyle(m.colorDisabled)
-	title := wizardTitleStyle().Render(wizardTitleText)
+	title := wizardTitleStyle().Render(wizardTitleText())
 
 	var body strings.Builder
 	body.WriteString(title + "\n\n")
@@ -891,6 +892,7 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m progressModel) View() string {
 	var b strings.Builder
+	b.WriteString(fmt.Sprintf("QEST %s\n\n", appVersion))
 	if m.model.done {
 		if m.model.err != nil {
 			b.WriteString("Install completed with failures.\n\n")
@@ -1152,6 +1154,7 @@ func (i *installer) runCommand(ctx context.Context, useSudo bool, name string, a
 		cmdArgs = append([]string{"-n", name}, args...)
 	}
 	cmd := exec.CommandContext(ctx, cmdName, cmdArgs...)
+	cmd.Stdin = os.Stdin
 	writer := newLineWriter(func(line string) { i.logger(line) })
 	cmd.Stdout = writer
 	cmd.Stderr = writer
